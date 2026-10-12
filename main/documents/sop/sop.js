@@ -979,7 +979,7 @@ async function initializeSopPage() {
         }
         renderSopModal(data);
         document.getElementById("sop-modal").dataset.sop = JSON.stringify(data);
-        await renderSopWorkflowHistory(sopId);
+        // Workflow history is shown separately in SOP Workflow Review.
     }
 
     async function renderSopWorkflowHistory(sopId) {
