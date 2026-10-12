@@ -212,7 +212,6 @@ async function initializeSopPage() {
                 .from("sop_documents")
                 .select("id,workshop_id,process_area_id,model_id,part_name_id,part_number,operation_name,created_by,models(model_series_id),sop_revisions(id,revision_number,revision_code,status,description,created_by,created_at)")
                 .eq("id", Number(draftSopId))
-                .eq("created_by", userId)
                 .single();
             if (error) throw error;
             const revision = (sop.sop_revisions || []).find(item => String(item.status || "").toLowerCase() === "draft" && String(item.created_by || sop.created_by) === String(userId));
@@ -1067,8 +1066,7 @@ async function initializeSopPage() {
     function renderSopModal(sop) {
         const modalBody = document.querySelector(".sop-modal-body");
         const revisions = sop.sop_revisions || [];
-        const currentRevision = revisions
-            .sort((a, b) => b.revision_number - a.revision_number)[0];
+        const currentRevision = [...revisions].sort((a, b) => (Number(b.revision_number) || 0) - (Number(a.revision_number) || 0)).find(revision => String(revision.status || "").toLowerCase() === "released") || [...revisions].sort((a, b) => (Number(b.revision_number) || 0) - (Number(a.revision_number) || 0))[0];
         const orderedRevisions = [...revisions].sort((a, b) => (Number(b.revision_number) || 0) - (Number(a.revision_number) || 0));
         const revisionHistoryHtml = orderedRevisions.length > 1 ? `
             <details class="sop-revision-history">
