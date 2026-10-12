@@ -164,7 +164,9 @@ BEGIN
 END;
 $function$;
 
+REVOKE ALL ON FUNCTION public.workflow_return_task_to_draft(bigint,text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.workflow_return_task_to_draft(bigint,text) TO authenticated;
+REVOKE ALL ON FUNCTION public.discard_sop_revision(bigint,bigint,text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.discard_sop_revision(bigint,bigint,text) TO authenticated;
 REVOKE EXECUTE ON FUNCTION public.workflow_return_task_to_draft(bigint,text) FROM anon;
 REVOKE EXECUTE ON FUNCTION public.discard_sop_revision(bigint,bigint,text) FROM anon;
