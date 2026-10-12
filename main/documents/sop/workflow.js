@@ -100,9 +100,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         if(!button)return;
         const instanceId=button.dataset.instanceId, detail=document.querySelector("#workflow-review-modal .sop-modal-body"), modal=document.getElementById("workflow-review-modal");
         detail.innerHTML="<p>Loading workflow review...</p>";
-        modal.classList.add("workflow-review-modal");
-        modal.querySelector(".sop-modal-header h2").textContent="SOP Workflow Review";
-        modal.querySelector(".sop-modal-header p").textContent="Review and process the current workflow task";
         modal.classList.remove("hidden");
         try{
             const {data:instance,error:instanceError}=await supabaseClient.from("workflow_instances").select("*").eq("id",instanceId).eq("document_type_code","sop").single();
