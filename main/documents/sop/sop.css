@@ -96,3 +96,9 @@
 .sop-revision-section small{color:#666}
 #sop-drafts .section-search,#sop-drafts .catalog-table{width:min(100%,1200px)}
 #sop-workflow .catalog-table,#sop-validation .catalog-table,#sop-approval .catalog-table{height:clamp(280px,calc(100vh - 270px),720px);max-height:clamp(280px,calc(100vh - 270px),720px)}
+.revision-badge.revision-draft{background:#eef2f7;color:#334155}
+.revision-badge.revision-released{background:#dcfce7;color:#166534}
+.revision-badge.revision-in_approval{background:#dbeafe;color:#1d4ed8}
+.revision-badge.revision-in_validation{background:#fef3c7;color:#92400e}
+.revision-badge.revision-rejected,.revision-badge.revision-obsolete{background:#fee2e2;color:#991b1b}
+.sop-control-tile.create-sop-button{position:relative;z-index:1;pointer-events:auto}
