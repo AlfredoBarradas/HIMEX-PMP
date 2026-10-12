@@ -760,10 +760,7 @@ async function initializeSopPage() {
         const viewButton = event.target.closest(".draft-view-button");
         if (viewButton) { viewSop(viewButton.dataset.sopId); return; }
         const editButton = event.target.closest(".edit-draft-button");
-        if (editButton) {
-            alert("Revision information cannot be edited after the revision is created. If changes are required, delete this Draft revision and create it again with the correct information.");
-            return;
-        }
+        if (editButton) { closeSopModal(); await openEditSop(editButton.dataset.sopId); return; }
         const deleteButton = event.target.closest(".delete-draft-button");
         if (deleteButton) {
             if (!confirm("Delete this Draft SOP permanently? This action cannot be undone.")) return;
@@ -933,6 +930,7 @@ async function initializeSopPage() {
                     code
                 ),
                 sop_revisions (
+                    id,
                     revision_number,
                     revision_code,
                     description,
@@ -1111,6 +1109,13 @@ async function initializeSopPage() {
                     <span>Description</span>
                     <p>${currentRevision?.description || ""}</p>
                 </div>
+                ${String(currentRevision?.status || "").toLowerCase() === "draft" ? `
+                    <div class='sop-modal-actions'>
+                        <button type='button' class='secondary-button edit-draft-button' data-sop-id='${sop.id}'>Edit Draft</button>
+                        <button type='button' class='danger-button delete-draft-button' data-sop-id='${sop.id}'>Delete Draft</button>
+                        <button type='button' class='primary-button draft-submit-button' data-sop-id='${sop.id}' data-revision-id='${currentRevision.id}' data-sop-code='${escapeHtml(sop.sop_code || "Unassigned")}' data-revision-code='${escapeHtml(currentRevision.revision_code || "")}'>Submit for Validation</button>
+                    </div>
+                ` : ""}
                 ${String(currentRevision?.status || "").toLowerCase() === "released" ? `
                     <div class="sop-modal-actions">
                         <button type="button" class="remark-button modal-revision-button" data-sop-id="${sop.id}">
