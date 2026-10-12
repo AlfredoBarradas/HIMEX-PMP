@@ -41,7 +41,7 @@ BEGIN
         RAISE EXCEPTION 'Task is not the active workflow task';
     END IF;
     IF v_document_type_code<>'sop' THEN RAISE EXCEPTION 'Return to Draft is only available for SOP workflows'; END IF;
-    IF v_required_permission NOT IN ('documents.sop.validate','documents.sop.approve') OR NOT public.has_permission(v_required_permission) THEN
+    IF v_required_permission IS NULL OR v_required_permission NOT IN ('documents.sop.validate','documents.sop.approve') OR NOT public.has_permission(v_required_permission) THEN
         RAISE EXCEPTION 'Missing permission to return this SOP task to Draft' USING ERRCODE = '42501';
     END IF;
     IF EXISTS (SELECT 1 FROM public.workflow_task_assignees a WHERE a.task_id=p_task_id)
