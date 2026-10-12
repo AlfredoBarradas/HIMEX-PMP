@@ -158,7 +158,7 @@ async function initializeSopPage() {
         editorDescription.textContent = "Create a new standard operating process.";
         revisionInfo.classList.add("hidden");
         descriptionTitle.innerHTML = 'Description <span class="required-marker" aria-hidden="true">*</span>';
-        descriptionLabel.textContent = "Description";
+        if (descriptionLabel) descriptionLabel.textContent = "Description";
         descriptionInput.placeholder = "Describe the purpose and scope of this SOP.";
         fileInput.value = "";
         setFormEditable(true);
@@ -173,7 +173,7 @@ async function initializeSopPage() {
         revisionCurrent.value = sop.currentRevision;
         revisionNew.value = getNextRevision(sop.currentRevision);
         descriptionTitle.textContent = "Change Summary";
-        descriptionLabel.textContent = "Change Summary";
+        if (descriptionLabel) descriptionLabel.textContent = "Change Summary";
         descriptionInput.placeholder = "Describe what changed in this revision.";
         fileInput.value = "";
         document.getElementById("sop-workshop").value = sop.workshopId;
@@ -767,7 +767,17 @@ async function initializeSopPage() {
         const workflowRow = event.target.closest("#sop-workflow-body .workflow-clickable-row");
         if (workflowRow && !event.target.closest("button, a, input, select, textarea, label")) { viewSop(workflowRow.dataset.sopId); return; }
         const taskRow = event.target.closest("#sop-validation-body .workflow-clickable-row, #sop-approval-body .workflow-clickable-row");
-        if (taskRow && !event.target.closest("button, a, input, select, textarea, label")) { viewSop(taskRow.dataset.sopId); return; }
+        if (taskRow && !event.target.closest("button, a, input, select, textarea, label")) {
+            const reviewAction = document.createElement("button");
+            reviewAction.type = "button";
+            reviewAction.className = "workflow-detail-button";
+            reviewAction.dataset.instanceId = taskRow.dataset.instanceId;
+            reviewAction.hidden = true;
+            document.body.appendChild(reviewAction);
+            reviewAction.click();
+            reviewAction.remove();
+            return;
+        }
         const draftRow = event.target.closest("#sop-drafts-body .catalog-clickable-row");
         if (draftRow && !event.target.closest("button, a, input, select, textarea, label")) { viewSop(draftRow.dataset.sopId); return; }
         const viewButton = event.target.closest(".draft-view-button");
