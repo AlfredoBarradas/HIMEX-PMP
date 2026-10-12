@@ -29,15 +29,28 @@
                         <h2>SOP Control</h2>
                     </div>
                     <div class="sop-control-grid">
-                        <button type="button" class="sop-control-tile create-sop-button"><span>Create New SOP</span></button>
+                        <button type="button" class="sop-control-tile create-sop-button primary-button"><span>Create New SOP</span></button>
                         <button type="button" class="sop-control-tile" data-section="sop-drafts"><span>My Drafts</span><strong id="my-drafts-count">0</strong></button>
                     </div>
-                    <div class="sop-workflow-grid">
-                        <button type="button" class="sop-workflow-tile workflow-main-tile" data-section="sop-workflow"><span>Workflow</span><p>Track documents waiting for action</p></button>
-                        <button type="button" class="sop-workflow-tile validation-tile" data-section="sop-validation"><span>Pending Validation</span><strong id="pending-validation-count">0</strong></button>
-                        <button type="button" class="sop-workflow-tile approval-tile" data-section="sop-approval"><span>Pending Approval</span><strong id="pending-approval-count">0</strong>
+                    <section class="sop-workflow-panel" aria-labelledby="sop-workflow-title">
+                        <button type="button" class="sop-workflow-heading" data-section="sop-workflow">
+                            <span>
+                                <strong id="sop-workflow-title">Workflow</strong>
+                                <small>Track documents waiting for action</small>
+                            </span>
+                            <span class="workflow-open-label">Open workflow</span>
                         </button>
-                    </div>
+                        <div class="sop-workflow-actions">
+                            <button type="button" class="sop-workflow-action" data-section="sop-validation">
+                                <span>Pending Validation</span>
+                                <strong id="pending-validation-count">0</strong>
+                            </button>
+                            <button type="button" class="sop-workflow-action" data-section="sop-approval">
+                                <span>Pending Approval</span>
+                                <strong id="pending-approval-count">0</strong>
+                            </button>
+                        </div>
+                    </section>
                 </section>
 
                 <section id="sop-create" class="sop-section sop-view hidden">
@@ -129,7 +142,7 @@
                         <div class="form-section">
                             <h3 id="sop-description-title">Description <span class="required-marker" aria-hidden="true">*</span></h3>
                             <div class="form-group">
-                                <label for="sop-description" id="sop-description-label">Description</label>
+                                
                                 <textarea id="sop-description" name="sop-description" rows="5"
                                     placeholder="Describe the purpose and scope of this SOP."></textarea>
                             </div>
@@ -137,7 +150,7 @@
                         <div class="form-section">
                             <h3>Document File</h3>
                             <div class="form-group">
-                                <label for="sop-file">SOP File</label>
+                                
                                 <input type="file" id="sop-file" name="sop-file" accept=".pdf,.xlsx,.xls,.docx,.doc">
                                 <small id="sop-file-help">Upload the document associated with this SOP.</small>
                             </div>
@@ -180,7 +193,7 @@
                             </thead>
                             <tbody id="sop-drafts-body">
                                 <tr>
-                                    <td colspan="8">Loading drafts...</td>
+                                    <td colspan="7">Loading drafts...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -337,7 +350,7 @@
                     <div class="catalog-table">
                         <table>
                             <thead>
-                                <tr><th>Date</th><th>Status</th><th>Code</th><th>Area</th><th>Process</th><th>Model</th><th>Part Name</th><th>Part Number</th><th>Operation Name</th><th>Revision</th></tr>
+                                <tr><th>Date</th><th>Status</th><th>Code</th><th>Area</th><th>Process</th><th>Model</th><th>Part Name</th><th>Part Number</th><th>Operation Name</th><th>Revision</th><th>Created By</th></tr>
                             </thead>
                             <tbody id="sop-catalog-body">
                             </tbody>
@@ -365,6 +378,22 @@
             </div>
             <div class="sop-modal-footer">
                 <button type="button" class="secondary-button" id="sop-modal-close-footer">Close</button>
+            </div>
+        </div>
+    </div>
+    <div id="workflow-review-modal" class="sop-modal hidden">
+        <div class="sop-modal-overlay"></div>
+        <div class="sop-modal-content">
+            <div class="sop-modal-header">
+                <div>
+                    <h2>SOP Workflow Review</h2>
+                    <p>Review and process the current workflow task</p>
+                </div>
+                <button type="button" class="sop-modal-close" id="workflow-modal-close">&times;</button>
+            </div>
+            <div class="sop-modal-body"><p>Workflow history will appear here.</p></div>
+            <div class="sop-modal-footer">
+                <button type="button" class="secondary-button" id="workflow-modal-close-footer">Close</button>
             </div>
         </div>
     </div>

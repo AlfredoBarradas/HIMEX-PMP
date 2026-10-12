@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!validationBody || !approvalBody || !workflowBody) return;
     const escapeText = value => String(value ?? "").replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
     const dateText = value => value ? new Date(value).toLocaleString([], {dateStyle:"medium",timeStyle:"short"}) : "—";
-    const labelText = value => ({in_progress:"In Progress",active:"In Progress",pending:"Pending",completed:"Completed",rejected:"Rejected",obsolete:"Obsolete",validation:"Validation",approval:"Approval",released:"Released",draft:"Draft",task_created:"Task created",task_completed:"Task completed",task_rejected:"Task rejected",workflow_started:"Workflow submitted",workflow_completed:"Workflow released",workflow_rejected:"Workflow rejected",sop_status_changed:"SOP status changed"}[String(value||"").toLowerCase()] || String(value||"").replaceAll("_"," ").replaceAll("-"," ").replace(/\b\w/g, char=>char.toUpperCase()));
+    const labelText = value => ({in_progress:"In Progress",active:"In Progress",pending:"Pending",completed:"Completed",rejected:"Rejected",obsolete:"Obsolete",validation:"Validation",approval:"Approval",released:"Released",draft:"Draft",task_created:"Task created",task_completed:"Task completed",task_rejected:"Task rejected",workflow_started:"Workflow submitted",workflow_completed:"Workflow released",workflow_rejected:"Workflow rejected",sop_returned_to_draft:"Returned to Draft",workflow_cancelled:"Workflow cancelled",sop_status_changed:"SOP status changed"}[String(value||"").toLowerCase()] || String(value||"").replaceAll("_"," ").replaceAll("-"," ").replace(/\b\w/g, char=>char.toUpperCase()));
     const dateDuration = (start,end) => {
         if (!start) return "—";
         const ms = Math.max(0, new Date(end || Date.now()) - new Date(start));
@@ -98,8 +98,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.addEventListener("click",async event=>{
         const button=event.target.closest(".workflow-detail-button");
         if(!button)return;
-        const instanceId=button.dataset.instanceId, detail=document.querySelector(".sop-modal-body"), modal=document.getElementById("sop-modal");
-        detail.innerHTML="<p>Loading workflow details...</p>"; modal.classList.remove("hidden");
+        const instanceId=button.dataset.instanceId, detail=document.querySelector("#workflow-review-modal .sop-modal-body"), modal=document.getElementById("workflow-review-modal");
+        detail.innerHTML="<p>Loading workflow review...</p>";
+        modal.classList.remove("hidden");
         try{
             const {data:instance,error:instanceError}=await supabaseClient.from("workflow_instances").select("*").eq("id",instanceId).eq("document_type_code","sop").single();
             if(instanceError)throw instanceError;
@@ -141,26 +142,30 @@ document.addEventListener("DOMContentLoaded", async () => {
             }).join("");
             const doc=docResult.data||{}, revision=revResult.data||{};
             const duration=dateDuration(instance.started_at,instance.completed_at);
-            detail.innerHTML="<h3>"+escapeText(doc.sop_code||"Unassigned SOP")+" · "+escapeText(revision.revision_code||"Revision unknown")+"</h3><p><strong>Workflow ID:</strong> "+escapeText(instance.id)+" · <strong>Status:</strong> "+escapeText(labelText(instance.status))+"</p><p><strong>Creator:</strong> "+escapeText(profileMap.get(String(revision.created_by||doc.created_by))||"Creator profile unavailable")+"</p><p><strong>Part No.:</strong> "+escapeText(doc.part_number||"—")+" · <strong>Operation:</strong> "+escapeText(doc.operation_name||"—")+"</p><p><strong>Submitted:</strong> "+escapeText(dateText(instance.started_at))+" · <strong>Duration:</strong> "+escapeText(duration)+(instance.completed_at?"":" (in progress)")+"</p><h4>Tasks</h4><div class='catalog-table'><table><thead><tr><th>Task</th><th>Status</th><th>Assigned To</th><th>Created</th><th>Completed</th></tr></thead><tbody>"+(taskHtml||"<tr><td colspan='5'>No tasks found.</td></tr>")+"</tbody></table></div><h4>History</h4><ul class='workflow-history-list'>"+(historyHtml||"<li>No history available.</li>")+"</ul>"+(canAct?"<div class='sop-revision-section'><label for='workflow-task-comment'>Review comments</label><textarea id='workflow-task-comment' rows='3' placeholder='Enter comments for this review'></textarea></div><div class='sop-modal-actions'><button type='button' class='danger-button' id='workflow-reject-task' data-task-id='"+escapeText(pendingTask.id)+"'>Reject and return to Draft</button><button type='button' class='primary-button' id='workflow-complete-task' data-task-id='"+escapeText(pendingTask.id)+"' data-stage='"+escapeText(permission)+"'>Complete "+escapeText(labelText(permission))+"</button></div>":pendingTask?"<p>You can view this workflow, but you cannot act on this task. Check your review permission, task assignment, and separation-of-duties requirements.</p>":"");
+            detail.innerHTML="<h3>"+escapeText(doc.sop_code||"Unassigned SOP")+" · "+escapeText(revision.revision_code||"Revision unknown")+"</h3><p><strong>Workflow ID:</strong> "+escapeText(instance.id)+" · <strong>Status:</strong> "+escapeText(labelText(instance.status))+"</p><p><strong>Creator:</strong> "+escapeText(profileMap.get(String(revision.created_by||doc.created_by))||"Creator profile unavailable")+"</p><p><strong>Part No.:</strong> "+escapeText(doc.part_number||"—")+" · <strong>Operation:</strong> "+escapeText(doc.operation_name||"—")+"</p><p><strong>Submitted:</strong> "+escapeText(dateText(instance.started_at))+" · <strong>Duration:</strong> "+escapeText(duration)+(instance.completed_at?"":" (in progress)")+"</p><h4>Tasks</h4><div class='workflow-task-table'><table><thead><tr><th>Task</th><th>Status</th><th>Assigned To</th><th>Created</th><th>Completed</th></tr></thead><tbody>"+(taskHtml||"<tr><td colspan='5'>No tasks found.</td></tr>")+"</tbody></table></div><h4>History</h4><ul class='workflow-history-list'>"+(historyHtml||"<li>No history available.</li>")+"</ul>"+(canAct?"<div class='sop-revision-section'><label for='workflow-task-comment'>Review comments / correction reason</label><textarea id='workflow-task-comment' rows='3' placeholder='Enter review comments or required corrections'></textarea></div><div class='sop-modal-actions'><button type='button' class='secondary-button' id='workflow-return-to-draft' data-task-id='"+escapeText(pendingTask.id)+"'>Return to Draft</button><button type='button' class='danger-button' id='workflow-reject-task' data-task-id='"+escapeText(pendingTask.id)+"'>Reject Revision (terminal)</button><button type='button' class='primary-button' id='workflow-complete-task' data-task-id='"+escapeText(pendingTask.id)+"' data-stage='"+escapeText(permission)+"'>Complete "+escapeText(labelText(permission))+"</button></div>":pendingTask?"<p>You can view this workflow, but you cannot act on this task. Check your review permission, task assignment, and separation-of-duties requirements.</p>":"");
         }catch(error){console.error("Unable to load workflow details:",error);detail.innerHTML="<p>Unable to load workflow details. "+escapeText(error?.message||"Check access policies and the browser console.")+"</p>";}
     });
+    document.getElementById("workflow-modal-close")?.addEventListener("click", () => document.getElementById("workflow-review-modal")?.classList.add("hidden"));
+    document.getElementById("workflow-modal-close-footer")?.addEventListener("click", () => document.getElementById("workflow-review-modal")?.classList.add("hidden"));
+    document.querySelector("#workflow-review-modal .sop-modal-overlay")?.addEventListener("click", () => document.getElementById("workflow-review-modal")?.classList.add("hidden"));
     function nodeMapLabel(nodeId){return "Task #"+nodeId;}
     document.addEventListener("click",async event=>{
-        const completeButton=event.target.closest("#workflow-complete-task"), rejectButton=event.target.closest("#workflow-reject-task");
-        if(!completeButton&&!rejectButton)return;
-        const button=completeButton||rejectButton, taskId=Number(button.dataset.taskId), comment=document.getElementById("workflow-task-comment")?.value?.trim()||"";
-        const isReject=Boolean(rejectButton);
-        if(isReject&&!comment){alert("Enter a reason before rejecting this SOP.");return;}
-        if(!isReject&&!comment&&!confirm("Complete this task without review comments?"))return;
-        if(isReject&&!confirm("Reject this task and return the SOP revision to Draft?"))return;
+        const completeButton=event.target.closest("#workflow-complete-task"), returnButton=event.target.closest("#workflow-return-to-draft"), rejectButton=event.target.closest("#workflow-reject-task");
+        if(!completeButton&&!returnButton&&!rejectButton)return;
+        const button=completeButton||returnButton||rejectButton, taskId=Number(button.dataset.taskId), comment=document.getElementById("workflow-task-comment")?.value?.trim()||"";
+        const isReject=Boolean(rejectButton), isReturn=Boolean(returnButton);
+        if((isReject||isReturn)&&!comment){alert(isReject?"Enter a reason before rejecting this revision.":"Enter the correction request before returning this revision to Draft.");return;}
+        if(!isReject&&!isReturn&&!comment&&!confirm("Complete this task without review comments?"))return;
+        if(isReject&&!confirm("Reject this revision permanently? It will remain in history and cannot be resubmitted."))return;
+        if(isReturn&&!confirm("Return this revision to Draft? Its revision code will be preserved so the creator can correct and resubmit it."))return;
         button.disabled=true;
         try{
-            const rpcName=isReject?"workflow_reject_task":"workflow_complete_task";
-            const rpcArgs=isReject?{p_task_id:taskId,p_reason:comment}:{p_task_id:taskId,p_transition_key:null,p_result:{comment}};
+            const rpcName=isReject?"workflow_reject_task":isReturn?"workflow_return_task_to_draft":"workflow_complete_task";
+            const rpcArgs=isReject?{p_task_id:taskId,p_reason:comment}:isReturn?{p_task_id:taskId,p_reason:comment}:{p_task_id:taskId,p_transition_key:null,p_result:{comment}};
             const {error}=await supabaseClient.rpc(rpcName,rpcArgs);
             if(error)throw error;
-            alert(isReject?"Task rejected. The reason has been recorded.":"Workflow task completed successfully.");
-            document.getElementById("sop-modal").classList.add("hidden");window.location.reload();
+            alert(isReject?"Revision rejected permanently. The released revision remains unchanged.":isReturn?"Revision returned to Draft. The same revision code can be corrected and resubmitted.":"Workflow task completed successfully.");
+            document.getElementById("workflow-review-modal").classList.add("hidden");window.location.reload();
         }catch(error){console.error("Workflow action failed:",error);alert("The workflow action failed: "+(error.message||"Check permissions and RPC parameters."));button.disabled=false;}
     });
 });
