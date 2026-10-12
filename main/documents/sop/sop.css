@@ -109,3 +109,7 @@
 .workflow-task-table td{padding:7px 10px;border-bottom:1px solid #e6eaec;white-space:normal}
 .workflow-review-modal .sop-modal-header h2{font-size:22px}
 .workflow-review-modal .sop-modal-body{overflow-y:auto}
+
+#workflow-review-modal .sop-modal-header h2{font-size:22px}
+#workflow-review-modal .sop-modal-body{overflow-y:auto}
+#workflow-review-modal .workflow-task-table{height:auto;max-height:none;overflow:visible}
