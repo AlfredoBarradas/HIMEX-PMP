@@ -158,7 +158,7 @@ async function initializeSopPage() {
         editorDescription.textContent = "Create a new standard operating process.";
         revisionInfo.classList.add("hidden");
         descriptionTitle.innerHTML = 'Description <span class="required-marker" aria-hidden="true">*</span>';
-        if (descriptionLabel) descriptionLabel.textContent = "Description";
+        if (descriptionLabel) if (descriptionLabel) descriptionLabel.textContent = "Description";
         descriptionInput.placeholder = "Describe the purpose and scope of this SOP.";
         fileInput.value = "";
         setFormEditable(true);
@@ -173,7 +173,7 @@ async function initializeSopPage() {
         revisionCurrent.value = sop.currentRevision;
         revisionNew.value = getNextRevision(sop.currentRevision);
         descriptionTitle.textContent = "Change Summary";
-        if (descriptionLabel) descriptionLabel.textContent = "Change Summary";
+        if (descriptionLabel) if (descriptionLabel) descriptionLabel.textContent = "Change Summary";
         descriptionInput.placeholder = "Describe what changed in this revision.";
         fileInput.value = "";
         document.getElementById("sop-workshop").value = sop.workshopId;
@@ -238,7 +238,7 @@ async function initializeSopPage() {
             editorTitle.textContent = "Edit Draft SOP";
             editorDescription.textContent = "Update the details of this draft before submitting it for validation.";
             descriptionTitle.textContent = "Description";
-            descriptionLabel.textContent = "Description";
+            if (descriptionLabel) descriptionLabel.textContent = "Description";
             revisionInfo.classList.add("hidden");
             setFormEditable(true);
             showSection("sop-create");
@@ -793,9 +793,10 @@ async function initializeSopPage() {
                     p_sop_id: Number(deleteButton.dataset.sopId)
                 });
                 if (error) throw error;
+                closeSopModal();
+                document.getElementById("sop-modal").removeAttribute("data-sop");
                 alert("Draft deleted successfully.");
-                await loadMyDrafts();
-                await loadSopCatalog();
+                await Promise.all([loadMyDrafts(), loadSopCatalog(), refreshWorkflowCounts()]);
             } catch (error) {
                 console.error("Error deleting SOP draft:", error);
                 alert("Could not delete this draft: " + (error.message || "Check the delete_sop_draft RPC and permissions."));
