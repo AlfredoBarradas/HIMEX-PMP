@@ -102,3 +102,10 @@
 .revision-badge.revision-in_validation{background:#fef3c7;color:#92400e}
 .revision-badge.revision-rejected,.revision-badge.revision-obsolete{background:#fee2e2;color:#991b1b}
 .sop-control-tile.create-sop-button{position:relative;z-index:1;pointer-events:auto}
+
+.workflow-task-table{width:100%;max-width:100%;height:auto;max-height:none;overflow:visible;border:1px solid var(--sop-line);border-radius:var(--sop-radius);background:#fff}
+.workflow-task-table table{width:100%;border-collapse:collapse;table-layout:auto}
+.workflow-task-table th{position:static;white-space:normal;padding:8px 10px;background:#edf5f5;border-bottom:1px solid var(--sop-line);border-right:1px solid #c7d7d9;text-align:left}
+.workflow-task-table td{padding:7px 10px;border-bottom:1px solid #e6eaec;white-space:normal}
+.workflow-review-modal .sop-modal-header h2{font-size:22px}
+.workflow-review-modal .sop-modal-body{overflow-y:auto}
