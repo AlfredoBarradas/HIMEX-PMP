@@ -72,50 +72,23 @@ async function initializeSopPage() {
             if (approvalCount) approvalCount.title = "Could not refresh. See browser console.";
         }
     }
-    async function loadSopWorkflow() {
-        const body = document.getElementById("sop-workflow-body");
-        if (!body) return;
-        body.innerHTML = '<tr><td colspan="6">Loading workflow...</td></tr>';
+    async function loadSopWorkflow() { await loadSopTaskCatalog("sop-workflow"); }
+    async function loadSopTaskCatalog(sectionId) {
+        const body = document.getElementById(sectionId + "-body"); if (!body) return;
+        body.innerHTML = '<tr><td colspan="11">Loading...</td></tr>';
         try {
-            const { data: instances, error } = await supabaseClient.from("workflow_instances").select("id,source_document_id,source_revision_id,status,current_node_id,started_at,completed_at").order("started_at", { ascending: false });
-            if (error) throw error;
-            const latestBySop = new Map();
-            (instances || []).forEach(instance => { const key=String(instance.source_document_id); if (!latestBySop.has(key)) latestBySop.set(key, instance); });
-            const latest=[...latestBySop.values()];
-            if (!latest.length) { body.innerHTML='<tr><td colspan="6">No SOP workflow records found.</td></tr>'; return; }
-            const docIds=[...new Set(latest.map(item=>item.source_document_id).filter(Boolean))];
-            const revisionIds=[...new Set(latest.map(item=>item.source_revision_id).filter(Boolean))];
-            const nodeIds=[...new Set(latest.map(item=>item.current_node_id).filter(Boolean))];
-            const instanceIds=latest.map(item=>item.id);
-            const [docs,revisions,nodes,tasks]=await Promise.all([
-                docIds.length?supabaseClient.from("sop_documents").select("id,sop_code,operation_name").in("id",docIds):Promise.resolve({data:[],error:null}),
-                revisionIds.length?supabaseClient.from("sop_revisions").select("id,revision_code,status").in("id",revisionIds):Promise.resolve({data:[],error:null}),
-                supabaseClient.from("workflow_nodes").select("id,label,node_type"),
-                supabaseClient.from("workflow_tasks").select("id,instance_id,node_id,status,created_at").in("instance_id",instanceIds).order("created_at",{ascending:false})
-            ]);
-            for (const result of [docs,revisions,nodes,tasks]) if(result.error) throw result.error;
-            const docMap=new Map((docs.data||[]).map(item=>[String(item.id),item]));
-            const revisionMap=new Map((revisions.data||[]).map(item=>[String(item.id),item]));
-            const nodeMap=new Map((nodes.data||[]).map(item=>[String(item.id),item]));
-            const taskMap=new Map();
-            (tasks.data||[]).forEach(task=>{if(!taskMap.has(String(task.instance_id)))taskMap.set(String(task.instance_id),[]);taskMap.get(String(task.instance_id)).push(task);});
-            body.innerHTML=latest.map(instance=>{
-                const doc=docMap.get(String(instance.source_document_id))||{};
-                const revision=revisionMap.get(String(instance.source_revision_id))||{};
-                const currentNode=nodeMap.get(String(instance.current_node_id))||{};
-                const pending=(taskMap.get(String(instance.id))||[]).find(task=>["pending","assigned","in_progress"].includes(String(task.status||"").toLowerCase()));
-                const node=nodeMap.get(String(pending?.node_id))||currentNode;
-                const status=String(instance.status||"pending").toLowerCase();
-                const stage=status==="completed"?"Completed":status==="rejected"?"Rejected":(node.label||node.node_type||"In progress");
-                const sopId=doc.id||instance.source_document_id;
-                return '<tr class="catalog-clickable-row workflow-clickable-row" tabindex="0" role="button" data-sop-id="'+escapeHtml(sopId)+'"><td><strong>'+escapeHtml(doc.sop_code||"Unassigned")+'</strong><br><small>'+escapeHtml(doc.operation_name||"")+'</small></td><td>'+renderRevisionBadge(revision.revision_code,revision.status)+'</td><td>'+escapeHtml(stage)+'</td><td>'+(pending?"Pending review":"—")+'</td><td>'+escapeHtml(formatDate(instance.started_at))+'</td><td>'+renderStatusBadge(status)+'</td></tr>';
-            }).join("");
-        } catch(error) {
-            console.error("Unable to load SOP workflow:",error);
-            body.innerHTML='<tr><td colspan="6">Unable to load workflow. Check permissions and the browser console.</td></tr>';
-        }
+            const { data: instances, error } = await supabaseClient.from("workflow_instances").select("id,source_document_id,source_revision_id,status,current_node_id,started_at,completed_at").order("started_at", { ascending: false }); if (error) throw error;
+            const docIds = [...new Set((instances || []).map(item => item.source_document_id).filter(Boolean))], revisionIds = [...new Set((instances || []).map(item => item.source_revision_id).filter(Boolean))];
+            const [docs,revisions,nodes] = await Promise.all([docIds.length ? supabaseClient.from("sop_documents").select("id,sop_code,part_number,operation_name,created_at,created_by,workshops(name),process_areas(name),models(name),part_names(name)").in("id",docIds) : Promise.resolve({data:[],error:null}),revisionIds.length ? supabaseClient.from("sop_revisions").select("id,revision_code,status,created_at,created_by").in("id",revisionIds) : Promise.resolve({data:[],error:null}),supabaseClient.from("workflow_nodes").select("id,label,node_type")]);
+            for (const result of [docs,revisions,nodes]) if (result.error) throw result.error;
+            const docMap = new Map((docs.data || []).map(item => [String(item.id),item])), revisionMap = new Map((revisions.data || []).map(item => [String(item.id),item])), nodeMap = new Map((nodes.data || []).map(item => [String(item.id),item]));
+            let rows = (instances || []).map(instance => { const doc=docMap.get(String(instance.source_document_id))||{}, revision=revisionMap.get(String(instance.source_revision_id))||{}, node=nodeMap.get(String(instance.current_node_id))||{}, status=String(instance.status||"pending").toLowerCase(), stage=status==="completed"?"Completed":status==="rejected"?"Rejected":String(node.label||node.node_type||"In progress"); return {instance,doc,revision,node,status,stage}; });
+            if (sectionId === "sop-validation") rows = rows.filter(row => /validat/i.test(row.stage) && !["completed","rejected"].includes(row.status));
+            if (sectionId === "sop-approval") rows = rows.filter(row => /approv/i.test(row.stage) && !["completed","rejected"].includes(row.status));
+            if (!rows.length) { body.innerHTML = '<tr><td colspan="11">No records found.</td></tr>'; return; }
+            body.innerHTML = rows.map(({instance,doc,revision,status,stage}) => '<tr class="catalog-clickable-row workflow-clickable-row" tabindex="0" role="button" data-sop-id="' + escapeHtml(doc.id || instance.source_document_id) + '" data-instance-id="' + escapeHtml(instance.id) + '" aria-label="Review SOP ' + escapeHtml(doc.sop_code || "Unassigned") + '"><td>' + escapeHtml(formatDate(instance.started_at || doc.created_at)) + '</td><td>' + renderStatusBadge(status === "active" || status === "in_progress" ? stage : status) + '</td><td>' + escapeHtml(doc.sop_code || "Unassigned") + '</td><td>' + escapeHtml(doc.workshops?.name || "") + '</td><td>' + escapeHtml(doc.process_areas?.name || "") + '</td><td>' + escapeHtml(doc.models?.name || "") + '</td><td>' + escapeHtml(doc.part_names?.name || "") + '</td><td>' + escapeHtml(doc.part_number || "") + '</td><td>' + escapeHtml(doc.operation_name || "") + '</td><td>' + renderRevisionBadge(revision.revision_code,revision.status) + '</td><td>' + escapeHtml(revision.created_by || doc.created_by || "") + '</td></tr>').join("");
+        } catch (error) { console.error("Unable to load SOP task catalog:",error); body.innerHTML = '<tr><td colspan="11">Unable to load records. Check permissions and the browser console.</td></tr>'; }
     }
-
     function showSection(sectionId) {
         const targetSection = document.getElementById(sectionId);
         if (!targetSection || !targetSection.classList.contains("sop-view")) return;
@@ -151,6 +124,7 @@ async function initializeSopPage() {
             });
         }
         if (sectionId === "sop-workflow") loadSopWorkflow();
+        if (sectionId === "sop-validation" || sectionId === "sop-approval") loadSopTaskCatalog(sectionId);
         if (sectionId === "sop-catalog") loadSopCatalog();
         window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -898,83 +872,16 @@ async function initializeSopPage() {
         if (!dateString) return "";
         return new Date(dateString).toLocaleDateString("en-US");
     }
-    function initializeCatalogColumnResizing() {
-        document.querySelectorAll("body[data-page=\"SOP\"] .catalog-table table").forEach(table => {
-            const headers = [...table.querySelectorAll("thead th")];
-            if (!headers.length || table.dataset.resizable === "true") return;
-            table.dataset.resizable = "true";
-            table.style.tableLayout = "fixed";
-            table.style.width = "100%";
-            const colgroup = document.createElement("colgroup");
-            const tableWidth = Math.max(table.getBoundingClientRect().width, 1);
-            const defaultWidths = {
-                "sop-catalog": [8, 9, 9, 8, 8, 8, 7, 8, 10, 12],
-                "sop-drafts": [11, 10, 10, 10, 14, 13, 22],
-                "sop-validation": [9, 10, 8, 11, 12, 14, 12, 13, 11],
-                "sop-approval": [12, 12, 11, 13, 14, 14, 12],
-                "sop-workflow": [8, 9, 8, 11, 12, 13, 11, 10, 10, 8]
-            };
-            const section = table.closest(".sop-view");
-            const widths = defaultWidths[section?.id] || headers.map(() => 100 / headers.length);
-            const cols = headers.map((header, index) => {
-                const col = document.createElement("col");
-                col.style.width = ((widths[index] || 100 / headers.length) / widths.reduce((sum, width) => sum + width, 0) * 100) + "%";
-                colgroup.appendChild(col);
-                header.style.position = "relative";
-                header.style.paddingRight = "14px";
-                const handle = document.createElement("span");
-                handle.className = "column-resizer";
-                handle.setAttribute("role", "separator");
-                handle.setAttribute("aria-orientation", "vertical");
-                handle.setAttribute("aria-label", "Resize " + header.textContent.trim() + " column");
-                handle.tabIndex = 0;
-                header.appendChild(handle);
-                handle.addEventListener("pointerdown", event => {
-                    if (index >= cols.length - 1) return;
-                    event.preventDefault();
-                    event.stopPropagation();
-                    const startX = event.clientX;
-                    const leftWidth = cols[index].getBoundingClientRect().width;
-                    const rightWidth = cols[index + 1].getBoundingClientRect().width;
-                    const available = leftWidth + rightWidth;
-                    const minWidth = 64;
-                    const maxDelta = Math.min(420 - leftWidth, rightWidth - minWidth);
-                    const minDelta = Math.max(minWidth - leftWidth, rightWidth - 420);
-                    const move = moveEvent => {
-                        const delta = Math.max(minDelta, Math.min(maxDelta, moveEvent.clientX - startX));
-                        cols[index].style.width = ((leftWidth + delta) / tableWidth * 100) + "%";
-                        cols[index + 1].style.width = ((rightWidth - delta) / tableWidth * 100) + "%";
-                    };
-                    const stop = () => {
-                        window.removeEventListener("pointermove", move);
-                        window.removeEventListener("pointerup", stop);
-                        document.body.classList.remove("catalog-column-resizing");
-                    };
-                    document.body.classList.add("catalog-column-resizing");
-                    window.addEventListener("pointermove", move);
-                    window.addEventListener("pointerup", stop, { once: true });
-                });
-                handle.addEventListener("keydown", event => {
-                    if (index >= cols.length - 1 || !["ArrowLeft", "ArrowRight"].includes(event.key)) return;
-                    event.preventDefault();
-                    const leftWidth = cols[index].getBoundingClientRect().width;
-                    const rightWidth = cols[index + 1].getBoundingClientRect().width;
-                    const delta = event.key === "ArrowRight" ? 12 : -12;
-                    if (leftWidth + delta < 64 || rightWidth - delta < 64) return;
-                    cols[index].style.width = ((leftWidth + delta) / tableWidth * 100) + "%";
-                    cols[index + 1].style.width = ((rightWidth - delta) / tableWidth * 100) + "%";
-                });
-                return col;
+    function initializeCatalogSorting() {
+        document.querySelectorAll(".catalog-table table").forEach(table => table.querySelectorAll("thead th").forEach((header,index) => {
+            header.title = "Sort by " + header.textContent.trim(); header.setAttribute("aria-sort","none");
+            header.addEventListener("click", () => { const body=table.tBodies[0]; if(!body)return; const direction=header.dataset.sortDirection==="A-Z"?"Z-A":"A-Z"; table.querySelectorAll("thead th").forEach(item=>{delete item.dataset.sortDirection;item.setAttribute("aria-sort","none");}); header.dataset.sortDirection=direction;header.setAttribute("aria-sort",direction==="A-Z"?"ascending":"descending");
+                const rows=[...body.rows].filter(row=>row.cells.length>1); rows.sort((a,b)=>{const av=(a.cells[index]?.innerText||"").trim(),bv=(b.cells[index]?.innerText||"").trim();const ad=Date.parse(av),bd=Date.parse(bv);const cmp=/date/i.test(header.textContent)&&!Number.isNaN(ad)&&!Number.isNaN(bd)?ad-bd:av.localeCompare(bv,undefined,{numeric:true,sensitivity:"base"});return direction==="A-Z"?cmp:-cmp;});rows.forEach(row=>body.appendChild(row));
             });
-            table.insertBefore(colgroup, table.firstChild);
-            table.querySelectorAll("tbody td").forEach(cell => {
-                const text = cell.textContent.trim();
-                if (text && !cell.hasAttribute("title")) cell.title = text;
-            });
-        });
+        }));
     }
     initializeSopCatalogFilters();
-    initializeCatalogColumnResizing();
+    initializeCatalogSorting();
     loadSopCatalog();
     loadMyDrafts();
     document.querySelectorAll('[data-section="sop-drafts"]').forEach(button => button.addEventListener("click", loadMyDrafts));
