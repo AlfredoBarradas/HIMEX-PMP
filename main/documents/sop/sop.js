@@ -253,7 +253,12 @@ async function initializeSopPage() {
         });
     });
     document.querySelectorAll(".create-sop-button").forEach(button => {
-        button.addEventListener("click", openCreateSop);
+        button.addEventListener("click", event => {
+            event.preventDefault();
+            sopForm.reset();
+            setCreateMode();
+            showSection("sop-create");
+        });
     });
     document.querySelectorAll(".edit-draft-button").forEach(button => {
         button.addEventListener("click", () => openEditSop(button.dataset.sopId));
