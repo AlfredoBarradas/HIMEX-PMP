@@ -761,6 +761,8 @@ async function initializeSopPage() {
     document.addEventListener("click", async event => {
         const workflowRow = event.target.closest("#sop-workflow-body .workflow-clickable-row");
         if (workflowRow && !event.target.closest("button, a, input, select, textarea, label")) { viewSop(workflowRow.dataset.sopId); return; }
+        const taskRow = event.target.closest("#sop-validation-body .workflow-clickable-row, #sop-approval-body .workflow-clickable-row");
+        if (taskRow && !event.target.closest("button, a, input, select, textarea, label")) { viewSop(taskRow.dataset.sopId); return; }
         const draftRow = event.target.closest("#sop-drafts-body .catalog-clickable-row");
         if (draftRow && !event.target.closest("button, a, input, select, textarea, label")) { viewSop(draftRow.dataset.sopId); return; }
         const viewButton = event.target.closest(".draft-view-button");
@@ -832,7 +834,12 @@ async function initializeSopPage() {
     function statusKey(value) { return String(value||"unknown").trim().toLowerCase().replace(/[\s-]+/g,"_"); }
     function statusLabel(value) { const key=statusKey(value); return ({released:"Released",validation:"In Validation",in_validation:"In Validation",approval:"In Approval",in_approval:"In Approval",draft:"Draft",obsolete:"Obsolete",rejected:"Rejected"}[key]||String(value||"Unknown").replaceAll("_"," ").replace(/\b\w/g,char=>char.toUpperCase())); }
     function renderStatusBadge(status) { return '<span class="status-badge status-' + statusKey(status) + '">' + escapeHtml(statusLabel(status)) + '</span>'; }
-    function renderRevisionBadge(code,status) { if(!code) return '<span class="revision-badge revision-unassigned">—</span>'; return '<span class="revision-badge status-' + statusKey(status) + '">' + escapeHtml(code) + '</span>'; }
+    function renderRevisionBadge(code,status) {
+        if (!code) return '<span class="revision-badge revision-unassigned">—</span>';
+        const key = statusKey(status);
+        const colorKey = ({draft:"draft",released:"released",completed:"released",in_approval:"in_approval",approval:"in_approval",in_validation:"in_validation",validation:"in_validation",rejected:"rejected",obsolete:"obsolete"})[key] || "draft";
+        return '<span class="revision-badge revision-' + colorKey + '">' + escapeHtml(code) + '</span>';
+    }
     function renderSopCatalog(sops,creatorMap=new Map()) {
         const body=document.getElementById("sop-catalog-body"); body.innerHTML="";
         sops.forEach(sop=>{
