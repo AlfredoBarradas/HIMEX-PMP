@@ -150,20 +150,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.querySelector("#workflow-review-modal .sop-modal-overlay")?.addEventListener("click", () => document.getElementById("workflow-review-modal")?.classList.add("hidden"));
     function nodeMapLabel(nodeId){return "Task #"+nodeId;}
     document.addEventListener("click",async event=>{
-        const completeButton=event.target.closest("#workflow-complete-task"), rejectButton=event.target.closest("#workflow-reject-task");
-        if(!completeButton&&!rejectButton)return;
-        const button=completeButton||rejectButton, taskId=Number(button.dataset.taskId), comment=document.getElementById("workflow-task-comment")?.value?.trim()||"";
-        const isReject=Boolean(rejectButton);
-        if(isReject&&!comment){alert("Enter a reason before rejecting this SOP.");return;}
-        if(!isReject&&!comment&&!confirm("Complete this task without review comments?"))return;
-        if(isReject&&!confirm("Reject this task and return the SOP revision to Draft?"))return;
+        const completeButton=event.target.closest("#workflow-complete-task"), returnButton=event.target.closest("#workflow-return-to-draft"), rejectButton=event.target.closest("#workflow-reject-task");
+        if(!completeButton&&!returnButton&&!rejectButton)return;
+        const button=completeButton||returnButton||rejectButton, taskId=Number(button.dataset.taskId), comment=document.getElementById("workflow-task-comment")?.value?.trim()||"";
+        const isReject=Boolean(rejectButton), isReturn=Boolean(returnButton);
+        if((isReject||isReturn)&&!comment){alert(isReject?"Enter a reason before rejecting this revision.":"Enter the correction request before returning this revision to Draft.");return;}
+        if(!isReject&&!isReturn&&!comment&&!confirm("Complete this task without review comments?"))return;
+        if(isReject&&!confirm("Reject this revision permanently? It will remain in history and cannot be resubmitted."))return;
+        if(isReturn&&!confirm("Return this revision to Draft? Its revision code will be preserved so the creator can correct and resubmit it."))return;
         button.disabled=true;
         try{
-            const rpcName=isReject?"workflow_reject_task":"workflow_complete_task";
-            const rpcArgs=isReject?{p_task_id:taskId,p_reason:comment}:{p_task_id:taskId,p_transition_key:null,p_result:{comment}};
+            const rpcName=isReject?"workflow_reject_task":isReturn?"workflow_return_task_to_draft":"workflow_complete_task";
+            const rpcArgs=isReject?{p_task_id:taskId,p_reason:comment}:isReturn?{p_task_id:taskId,p_reason:comment}:{p_task_id:taskId,p_transition_key:null,p_result:{comment}};
             const {error}=await supabaseClient.rpc(rpcName,rpcArgs);
             if(error)throw error;
-            alert(isReject?"Task rejected. The reason has been recorded.":"Workflow task completed successfully.");
+            alert(isReject?"Revision rejected permanently. The released revision remains unchanged.":isReturn?"Revision returned to Draft. The same revision code can be corrected and resubmitted.":"Workflow task completed successfully.");
             document.getElementById("workflow-review-modal").classList.add("hidden");window.location.reload();
         }catch(error){console.error("Workflow action failed:",error);alert("The workflow action failed: "+(error.message||"Check permissions and RPC parameters."));button.disabled=false;}
     });
