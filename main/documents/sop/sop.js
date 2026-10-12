@@ -864,12 +864,12 @@ async function initializeSopPage() {
     }
     function revisionNumber(revision) { return Number(revision?.revision_number)||parseInt(String(revision?.revision_code||"").replace(/\D/g,""),10)||0; }
     function statusKey(value) { return String(value||"unknown").trim().toLowerCase().replace(/[\s-]+/g,"_"); }
-    function statusLabel(value) { const key=statusKey(value); return ({released:"Released",validation:"In Validation",in_validation:"In Validation",approval:"In Approval",in_approval:"In Approval",draft:"Draft",obsolete:"Obsolete",rejected:"Rejected"}[key]||String(value||"Unknown").replaceAll("_"," ").replace(/\b\w/g,char=>char.toUpperCase())); }
+    function statusLabel(value) { const key=statusKey(value); return ({released:"Released",validation:"In Validation",in_validation:"In Validation",approval:"In Approval",in_approval:"In Approval",draft:"Draft",obsolete:"Obsolete",rejected:"Rejected",discarded:"Discarded"}[key]||String(value||"Unknown").replaceAll("_"," ").replace(/\b\w/g,char=>char.toUpperCase())); }
     function renderStatusBadge(status) { return '<span class="status-badge status-' + statusKey(status) + '">' + escapeHtml(statusLabel(status)) + '</span>'; }
     function renderRevisionBadge(code,status) {
         if (!code) return '<span class="revision-badge revision-unassigned">—</span>';
         const key = statusKey(status);
-        const colorKey = ({draft:"draft",released:"released",completed:"released",in_approval:"in_approval",approval:"in_approval",in_validation:"in_validation",validation:"in_validation",rejected:"rejected",obsolete:"obsolete"})[key] || "draft";
+        const colorKey = ({draft:"draft",released:"released",completed:"released",in_approval:"in_approval",approval:"in_approval",in_validation:"in_validation",validation:"in_validation",rejected:"rejected",obsolete:"obsolete",discarded:"discarded"})[key] || "draft";
         return '<span class="revision-badge revision-' + colorKey + '">' + escapeHtml(code) + '</span>';
     }
     function renderSopCatalog(sops,creatorMap=new Map()) {
