@@ -113,3 +113,5 @@
 #workflow-review-modal .sop-modal-header h2{font-size:22px}
 #workflow-review-modal .sop-modal-body{overflow-y:auto}
 #workflow-review-modal .workflow-task-table{height:auto;max-height:none;overflow:visible}
+
+.revision-badge.revision-discarded,.status-badge.status-discarded{background:#e5e7eb;color:#374151}.sop-draft-candidate{margin-top:16px;padding:16px;border:1px solid var(--line);border-radius:8px;background:#fffdf5}.sop-draft-candidate h3{margin:0 0 10px}.sop-draft-candidate p{margin:8px 0}
