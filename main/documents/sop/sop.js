@@ -86,7 +86,7 @@ async function initializeSopPage() {
             (instances || []).forEach(instance => { const key=String(instance.source_document_id || ""); if(key && !latestBySop.has(key)) latestBySop.set(key,instance); });
             let rows = [...latestBySop.values()].map(instance => { const doc=docMap.get(String(instance.source_document_id))||{}, revision=revisionMap.get(String(instance.source_revision_id))||{}, node=nodeMap.get(String(instance.current_node_id))||{}, status=String(instance.status||"pending").toLowerCase(), stage=status==="completed"?"Completed":status==="rejected"?"Rejected":String(node.label||node.node_type||"In progress"); return {instance,doc,revision,node,status,stage}; });
             const creatorIds=[...new Set(rows.map(row=>row.revision.created_by||row.doc.created_by).filter(Boolean))];
-            const profileResult=creatorIds.length?await supabaseClient.from("user_profiles").select("id,full_name").in("id",creatorIds):{data:[],error:null};
+            const profileResult=creatorIds.length?await supabaseClient.from("user_profile_names").select("id,full_name").in("id",creatorIds):{data:[],error:null};
             if(profileResult.error)console.warn("Creator names unavailable in workflow catalog:",profileResult.error);
             const creatorMap=new Map((profileResult.data||[]).map(profile=>[String(profile.id),profile.full_name||"Unknown"]));
             if (sectionId === "sop-validation") rows = rows.filter(row => /validat/i.test(row.stage) && !["completed","rejected"].includes(row.status));
@@ -857,7 +857,7 @@ async function initializeSopPage() {
         if (!data || data.length === 0) { catalogBody.innerHTML = '<tr><td colspan="12">No SOPs found.</td></tr>'; populateSopCatalogFilters(); return; }
         const creatorIds = [...new Set(data.map(sop => { const revs=sop.sop_revisions||[]; const released=revs.filter(r=>String(r.status||"").toLowerCase()==="released"); const current=[...(released.length?released:revs)].sort((a,b)=>revisionNumber(b)-revisionNumber(a))[0]; return current?.created_by||sop.created_by; }).filter(Boolean))];
         let profiles=[];
-        if (creatorIds.length) { const profileResult=await supabaseClient.from("user_profiles").select("id,full_name").in("id",creatorIds); if(profileResult.error) console.warn("Creator names unavailable in SOP catalog:",profileResult.error); else profiles=profileResult.data||[]; }
+        if (creatorIds.length) { const profileResult=await supabaseClient.from("user_profile_names").select("id,full_name").in("id",creatorIds); if(profileResult.error) console.warn("Creator names unavailable in SOP catalog:",profileResult.error); else profiles=profileResult.data||[]; }
         renderSopCatalog(data,new Map(profiles.map(profile=>[String(profile.id),profile.full_name||"Unknown"])));
         populateSopCatalogFilters();
         applySopCatalogFilters();
