@@ -22,7 +22,8 @@
     margin: 20px 0;
 }
 
-.sop-control-tile {
+.sop-control-tile, 
+.sop-workflow-tile {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -49,7 +50,8 @@
     border-bottom: 0;
 }
 
-.sop-control-tile strong {
+.sop-control-tile strong,
+.sop-workflow-tile strong {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -62,30 +64,14 @@
     font-size: 22px;
 }
 
-.sop-control-tile:hover {
+.sop-control-tile:hover,
+.sop-workflow-tile:hover {
     background: #f7fcfc;
 }
 
 .workflow-summary button,
 .table-actions button {
     font-family: inherit;
-}
-
-@media (max-width: 700px) {
-    .sop-control-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .sop-control-tile,
-    .sop-control-tile:nth-child(2n),
-    .sop-control-tile:nth-last-child(-n + 2) {
-        border-right: 0;
-        border-bottom: 1px solid #d9dfe3;
-    }
-
-    .sop-control-tile:last-child {
-        border-bottom: 0;
-    }
 }
 
 .workflow-summary {
@@ -1236,3 +1222,100 @@ body[data-page="SOP"] #sop-catalog .catalog-table th:nth-child(7) { width: 7%; }
 body[data-page="SOP"] #sop-catalog .catalog-table th:nth-child(8) { width: 8%; }
 body[data-page="SOP"] #sop-catalog .catalog-table th:nth-child(9) { width: 10%; }
 body[data-page="SOP"] #sop-catalog .catalog-table th:nth-child(10) { width: 12%; }
+
+.sop-workflow-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    border: 1px solid #d9dfe3;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+    margin: 20px 0;
+}
+
+.sop-workflow-tile>span:first-child {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.sop-workflow-tile p {
+    margin: 0;
+    color: var(--muted-color, #64748b);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+/* SOP Control: four-column workflow layout */
+body[data-page="SOP"] .sop-workflow-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: 100%;
+    margin: 20px 0;
+}
+
+/* Workflow occupies columns 1 and 2 */
+body[data-page="SOP"] .sop-workflow-tile.workflow-main-tile {
+    grid-column: span 2;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 6px;
+    min-width: 0;
+    text-align: left;
+}
+
+/* Description directly below the title */
+body[data-page="SOP"] .sop-workflow-tile.workflow-main-tile>span:first-child {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+body[data-page="SOP"] .sop-workflow-tile.workflow-main-tile p {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+/* Validation and Approval occupy columns 3 and 4 */
+body[data-page="SOP"] .sop-workflow-tile.validation-tile,
+body[data-page="SOP"] .sop-workflow-tile.approval-tile {
+    justify-content: space-between;
+    align-items: center;
+    flex-direction: row;
+    gap: 8px;
+    min-width: 0;
+}
+
+@media (max-width: 700px) {
+    body[data-page="SOP"] .sop-workflow-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    body[data-page="SOP"] .sop-workflow-tile.workflow-main-tile {
+        grid-column: span 2;
+    }
+}
+
+
+body[data-page="SOP"] .sop-workflow-grid {
+    border: 1px solid var(--pmp-border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+    box-sizing: border-box;
+}
+
+body[data-page="SOP"] .sop-workflow-tile {
+    box-sizing: border-box;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+body[data-page="SOP"] .sop-workflow-tile:not(:last-child) {
+    border-right: 1px solid var(--pmp-border);
+}
+
+body[data-page="SOP"] .sop-workflow-tile:hover {
+    box-shadow: none;
+}

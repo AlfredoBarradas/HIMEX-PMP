@@ -24,74 +24,20 @@
 
             <section class="content">
 
-                <section id="sop-control" class="sop-section sop-view">
+                <section id="sop-control" class="sop-section sop-view" data-required-permission="documents.sop.create">
                     <div class="section-header">
                         <h2>SOP Control</h2>
                     </div>
                     <div class="sop-control-grid">
-                        <button type="button" class="sop-control-tile create-sop-button">
-                            <span>Create New SOP</span>
-                        </button>
-                        <button type="button" class="sop-control-tile" data-section="sop-validation">
-                            <span>Pending Validation</span>
-                            <strong id="pending-validation-count">0</strong>
-                        </button>
-                        <button type="button" class="sop-control-tile" data-section="sop-drafts">
-                            <span>My Drafts</span>
-                            <strong id="my-drafts-count">0</strong>
-                        </button>
-                        <button type="button" class="sop-control-tile" data-section="sop-approval">
-                            <span>Pending Approval</span>
-                            <strong id="pending-approval-count">0</strong>
+                        <button type="button" class="sop-control-tile create-sop-button"><span>Create New SOP</span></button>
+                        <button type="button" class="sop-control-tile" data-section="sop-drafts"><span>My Drafts</span><strong id="my-drafts-count">0</strong></button>
+                    </div>
+                    <div class="sop-workflow-grid">
+                        <button type="button" class="sop-workflow-tile workflow-main-tile" data-section="sop-workflow"><span>Workflow</span><p>Track documents waiting for action</p></button>
+                        <button type="button" class="sop-workflow-tile validation-tile" data-section="sop-validation"><span>Pending Validation</span><strong id="pending-validation-count">0</strong></button>
+                        <button type="button" class="sop-workflow-tile approval-tile" data-section="sop-approval"><span>Pending Approval</span><strong id="pending-approval-count">0</strong>
                         </button>
                     </div>
-
-                    <div class="workflow-summary">
-                        <div class="section-header">
-                            <div>
-                                <h3>Workflow</h3>
-                                <p>Track documents waiting for action</p>
-                            </div>
-                            <button type="button" class="secondary-button" data-section="sop-workflow">View Workflow</button>
-                        </div>
-                    </div>
-
-                    <section id="sop-catalog" class="sop-catalog">
-                        <div class="section-header">
-                            <div>
-                                <h2>SOP Index</h2>
-                                <p>Search and browse released SOP documents</p>
-                            </div>
-                        </div>
-                        <!-- SEARCH -->
-                        <div class="catalog-search">
-                            <label for="sop-search-box">Search by code, operation name, model, part number, etc.</label>
-                            <input type="text" id="sop-search-box" name="sop-search-box" placeholder="Search SOP...">
-                        </div>
-                        <!-- FILTERS -->
-                        <div class="catalog-filters">
-                            <div class="filter-group"><label for="filter-area">Area</label><select id="filter-area"><option value="">All areas</option></select></div>
-                            <div class="filter-group"><label for="filter-process">Process</label><select id="filter-process"><option value="">All processes</option></select></div>
-                            <div class="filter-group"><label for="filter-series">Model Series</label><select id="filter-series"><option value="">All model series</option></select></div>
-                            <div class="filter-group"><label for="filter-model">Size / Model</label><select id="filter-model"><option value="">All sizes</option></select></div>
-                            <div class="filter-group"><label for="filter-part-name">Part Name</label><select id="filter-part-name"><option value="">All part names</option></select></div>
-                            <div class="filter-group"><label for="filter-created-by">Created By</label><select id="filter-created-by"><option value="">All creators</option></select></div>
-                            <div class="filter-group"><label for="filter-status">Status</label><select id="filter-status"><option value="">All statuses</option></select></div>
-                        </div>
-                        <div class="catalog-filter-actions">
-                            <button type="button" id="clear-sop-filters" class="secondary-button">Clear Filters</button>
-                        </div>
-                        <!-- TABLE -->
-                        <div class="catalog-table">
-                            <table>
-                                <thead>
-                                    <tr><th>Date</th><th>Status</th><th>Code</th><th>Revision</th><th>Area</th><th>Process</th><th>Model</th><th>Part Name</th><th>Part Number</th><th>Operation Name</th></tr>
-                                </thead>
-                                <tbody id="sop-catalog-body">
-                                </tbody>
-                            </table>
-                        </div>
-                    </section>
                 </section>
 
                 <section id="sop-create" class="sop-section sop-view hidden">
@@ -101,7 +47,7 @@
                             <p id="sop-editor-description">Create a new standard operating process.</p>
                         </div>
                         <button type="button" class="secondary-button" data-section="sop-control">Back</button>
-                        
+                
                     </div>
                     <div id="revision-info" class="form-section hidden">
                         <h3>Revision Information</h3>
@@ -128,57 +74,64 @@
                             <h3>Basic Information</h3>
                             <div class="form-grid">
                                 <div class="form-group">
-                                    <label for="sop-workshop">Workshop area <span class="required-marker" aria-hidden="true">*</span></label>
+                                    <label for="sop-workshop">Workshop area <span class="required-marker"
+                                            aria-hidden="true">*</span></label>
                                     <select id="sop-workshop" name="sop-workshop">
                                         <option value="">--None--</option>
                                     </select>
                                 </div>
-
+                
                                 <div class="form-group">
-                                    <label for="sop-process">Process area <span class="required-marker" aria-hidden="true">*</span></label>
+                                    <label for="sop-process">Process area <span class="required-marker"
+                                            aria-hidden="true">*</span></label>
                                     <select id="sop-process" name="sop-process">
                                         <option value="">--None--</option>
                                     </select>
                                 </div>
-
+                
                                 <div class="form-group">
-                                    <label for="sop-model-series">Model series <span class="required-marker" aria-hidden="true">*</span></label>
+                                    <label for="sop-model-series">Model series <span class="required-marker"
+                                            aria-hidden="true">*</span></label>
                                     <select id="sop-model-series" name="sop-model-series">
                                         <option value="">--None--</option>
                                     </select>
                                 </div>
-
+                
                                 <div class="form-group">
                                     <label for="sop-model">Model size <span class="required-marker" aria-hidden="true">*</span></label>
                                     <select id="sop-model" name="sop-model">
                                         <option value="">--None--</option>
                                     </select>
                                 </div>
-
+                
                                 <div class="form-group">
-                                    <label for="sop-part-name">Part Name <span class="required-marker" aria-hidden="true">*</span></label>
+                                    <label for="sop-part-name">Part Name <span class="required-marker"
+                                            aria-hidden="true">*</span></label>
                                     <select id="sop-part-name" name="sop-part-name">
                                         <option value="">--None--</option>
                                     </select>
                                 </div>
-
+                
                                 <div class="form-group">
-                                    <label for="sop-part-number">Part Number <span class="required-marker" aria-hidden="true">*</span></label>
+                                    <label for="sop-part-number">Part Number <span class="required-marker"
+                                            aria-hidden="true">*</span></label>
                                     <input type="text" id="sop-part-number" name="sop-part-number" placeholder="T450612">
                                 </div>
-
+                
                                 <div class="form-group">
-                                    <label for="sop-operation">Operation Name <span class="required-marker" aria-hidden="true">*</span></label>
+                                    <label for="sop-operation">Operation Name <span class="required-marker"
+                                            aria-hidden="true">*</span></label>
                                     <input type="text" id="sop-operation" name="sop-operation" placeholder="Colocacion de...">
                                 </div>
                             </div>
                         </div>
-
+                
                         <div class="form-section">
                             <h3 id="sop-description-title">Description <span class="required-marker" aria-hidden="true">*</span></h3>
                             <div class="form-group">
                                 <label for="sop-description" id="sop-description-label">Description</label>
-                                <textarea id="sop-description" name="sop-description" rows="5" placeholder="Describe the purpose and scope of this SOP."></textarea>
+                                <textarea id="sop-description" name="sop-description" rows="5"
+                                    placeholder="Describe the purpose and scope of this SOP."></textarea>
                             </div>
                         </div>
                         <div class="form-section">
@@ -191,12 +144,12 @@
                         </div>
                         <!-- EDITOR ACTIONS -->
                         <div class="form-actions">
-                            <button type="button" class="secondary-button"id="save-sop-draft">Save Draft</button>
+                            <button type="button" class="secondary-button" id="save-sop-draft">Save Draft</button>
                             <button type="submit" class="primary-button">Submit for Validation</button>
                         </div>
                     </form>
                 </section>
-
+                
                 <section id="sop-drafts" class="sop-section sop-view hidden">
                     <div class="section-header">
                         <div>
@@ -205,16 +158,70 @@
                         </div>
                         <button type="button" class="secondary-button" data-section="sop-control">Back</button>
                     </div>
-
-                    <div class="catalog-search section-search"><label for="sop-drafts-search">Search my drafts</label><input type="search" id="sop-drafts-search" data-table-search="sop-drafts-body" placeholder="Search code, model, part number, operation..."></div>
-
+                
+                    <div class="catalog-search section-search">
+                        <label for="sop-drafts-search">Search SOP drafts</label>
+                        <input type="search" id="sop-drafts-search" data-table-search="sop-drafts-body"
+                            placeholder="Search by area, process, model, part number, operation...">
+                    </div>
+                
                     <div class="catalog-table">
                         <table>
                             <thead>
-                                <tr><th>Code</th><th>Area</th><th>Process</th><th>Model</th><th>Part Name</th><th>Part Number</th><th>Operation Name</th></tr>
+                                <tr>
+                                    <th>Code</th>
+                                    <th>Area</th>
+                                    <th>Process</th>
+                                    <th>Model</th>
+                                    <th>Part Name</th>
+                                    <th>Part Number</th>
+                                    <th>Operation Name</th>
+                                </tr>
                             </thead>
+                            <tbody id="sop-drafts-body">
+                                <tr>
+                                    <td colspan="8">Loading drafts...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
 
-                            <tbody id="sop-drafts-body"><tr><td colspan="8">Loading drafts...</td></tr></tbody>
+                <section id="sop-workflow" class="sop-section sop-view hidden" data-required-permission="documents.sop.create">
+                    <div class="section-header">
+                        <div>
+                            <h2>SOP Workflow</h2>
+                            <p>Track the current status of SOP documents</p>
+                        </div>
+                        <button type="button" class="secondary-button" data-section="sop-control">Back</button>
+                    </div>
+                
+                    <div class="catalog-search section-search"><label for="sop-workflow-search">Search workflow</label><input
+                            type="search" id="sop-workflow-search" data-table-search="sop-workflow-body"
+                            placeholder="Search code, stage, assignee, status..."></div>
+                
+                    <div class="catalog-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Area</th>
+                                    <th>Process</th>
+                                    <th>Model</th>
+                                    <th>Part Name</th>
+                                    <th>Part Number</th>
+                                    <th>Operation Name</th>
+                                    <th>Created By</th>
+                                    <th>Current Stage</th>
+                                    <th>Pending With</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                
+                            <tbody id="sop-workflow-body">
+                                <tr>
+                                    <td colspan="6">Loading workflow...</td>
+                                </tr>
+                            </tbody>
                         </table>
                     </div>
                 </section>
@@ -227,20 +234,36 @@
                         </div>
                         <button type="button" class="secondary-button" data-section="sop-control">Back</button>
                     </div>
-
-                    <div class="catalog-search section-search"><label for="sop-validation-search">Search pending validation</label><input type="search" id="sop-validation-search" data-table-search="sop-validation-body" placeholder="Search code, model, part number, creator..."></div>
-
+                
+                    <div class="catalog-search section-search"><label for="sop-validation-search">Search pending
+                            validation</label><input type="search" id="sop-validation-search" data-table-search="sop-validation-body"
+                            placeholder="Search code, model, part number, creator..."></div>
+                
                     <div class="catalog-table">
                         <table>
                             <thead>
-                                <tr><th>Area</th><th>Process</th><th>Model</th><th>Part Name</th><th>Part Number</th><th>Operation Name</th><th>Created By</th><th>Pending With</th><th>Date</th></tr>
+                                <tr>
+                                    <th>Area</th>
+                                    <th>Process</th>
+                                    <th>Model</th>
+                                    <th>Part Name</th>
+                                    <th>Part Number</th>
+                                    <th>Operation Name</th>
+                                    <th>Created By</th>
+                                    <th>Pending With</th>
+                                    <th>Date</th>
+                                </tr>
                             </thead>
-
-                            <tbody id="sop-validation-body"><tr><td colspan="7">Loading workflow tasks...</td></tr></tbody>
+                
+                            <tbody id="sop-validation-body">
+                                <tr>
+                                    <td colspan="7">Loading workflow tasks...</td>
+                                </tr>
+                            </tbody>
                         </table>
                     </div>
                 </section>
-
+                
                 <section id="sop-approval" class="sop-section sop-view hidden">
                     <div class="section-header">
                         <div>
@@ -249,9 +272,11 @@
                         </div>
                         <button type="button" class="secondary-button" data-section="sop-control">Back</button>
                     </div>
-
-                    <div class="catalog-search section-search"><label for="sop-approval-search">Search pending approval</label><input type="search" id="sop-approval-search" data-table-search="sop-approval-body" placeholder="Search code, model, part number, creator..."></div>
-
+                
+                    <div class="catalog-search section-search"><label for="sop-approval-search">Search pending approval</label><input
+                            type="search" id="sop-approval-search" data-table-search="sop-approval-body"
+                            placeholder="Search code, model, part number, creator..."></div>
+                
                     <div class="catalog-table">
                         <table>
                             <thead>
@@ -265,34 +290,60 @@
                                     <th>Actions</th>
                                 </tr>
                             </thead>
-
-                            <tbody id="sop-approval-body"><tr><td colspan="7">Loading workflow tasks...</td></tr></tbody>
+                
+                            <tbody id="sop-approval-body">
+                                <tr>
+                                    <td colspan="7">Loading workflow tasks...</td>
+                                </tr>
+                            </tbody>
                         </table>
                     </div>
                 </section>
 
-                <section id="sop-workflow" class="sop-section sop-view hidden">
+                <section id="sop-catalog" class="sop-catalog sop-view">
                     <div class="section-header">
                         <div>
-                            <h2>SOP Workflow</h2>
-                            <p>Track the current status of SOP documents</p>
+                            <h2>SOP Index</h2>
+                            <p>Search and browse released SOP documents</p>
                         </div>
-                        <button type="button" class="secondary-button" data-section="sop-control">Back</button>
                     </div>
-
-                    <div class="catalog-search section-search"><label for="sop-workflow-search">Search workflow</label><input type="search" id="sop-workflow-search" data-table-search="sop-workflow-body" placeholder="Search code, stage, assignee, status..."></div>
-
+                    <!-- SEARCH -->
+                    <div class="catalog-search">
+                        <label for="sop-search-box">Search by code, operation name, model, part number, etc.</label>
+                        <input type="text" id="sop-search-box" name="sop-search-box" placeholder="Search SOP...">
+                    </div>
+                    <!-- FILTERS -->
+                    <div class="catalog-filters">
+                        <div class="filter-group">
+                            <label for="filter-area">Area</label>
+                            <select id="filter-area">
+                                <option value="">All areas</option>
+                            </select>
+                        </div>
+                        <div class="filter-group"><label for="filter-process">Process</label><select id="filter-process"><option value="">All processes</option></select></div>
+                        <div class="filter-group"><label for="filter-series">Model Series</label><select id="filter-series"><option value="">All model series</option></select></div>
+                        <div class="filter-group"><label for="filter-model">Size / Model</label><select id="filter-model"><option value="">All sizes</option></select></div>
+                        <div class="filter-group"><label for="filter-part-name">Part Name</label><select id="filter-part-name"><option value="">All part names</option></select></div>
+                        <div class="filter-group"><label for="filter-created-by">Created By</label><select id="filter-created-by"><option value="">All creators</option></select></div>
+                        <div class="filter-group"><label for="filter-status">Status</label><select id="filter-status"><option value="">All statuses</option></select></div>
+                    </div>
+                    <div class="catalog-filter-actions">
+                        <button type="button" id="clear-sop-filters" class="secondary-button">Clear Filters</button>
+                    </div>
+                    <!-- TABLE -->
                     <div class="catalog-table">
                         <table>
                             <thead>
-                                <tr><th>Area</th><th>Process</th><th>Model</th><th>Part Name</th><th>Part Number</th><th>Operation Name</th><th>Created By</th><th>Current Stage</th><th>Pending With</th><th>Status</th></tr>
+                                <tr><th>Date</th><th>Status</th><th>Code</th><th>Area</th><th>Process</th><th>Model</th><th>Part Name</th><th>Part Number</th><th>Operation Name</th><th>Revision</th></tr>
                             </thead>
-
-                            <tbody id="sop-workflow-body"><tr><td colspan="6">Loading workflow...</td></tr></tbody>
+                            <tbody id="sop-catalog-body">
+                            </tbody>
                         </table>
                     </div>
                 </section>
+                
             </section>
+
         </main>
     </div>
 

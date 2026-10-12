@@ -23,9 +23,16 @@ async function initializeSopPage() {
     const descriptionLabel = document.getElementById("sop-description-label");
     const descriptionInput = document.getElementById("sop-description");
     const fileInput = document.getElementById("sop-file");
+
     function setMyDraftsCount(count) {
         const counter = document.getElementById("my-drafts-count");
         if (counter) counter.textContent = String(count);
+    }
+    function applySopPermissions() {
+        document.querySelectorAll("[data-required-permission]").forEach(element => {
+            const permission = element.dataset.requiredPermission;
+            element.classList.toggle("hidden", !hasPermission(permission));
+        });
     }
     async function refreshWorkflowCounts() {
         try {
@@ -110,16 +117,44 @@ async function initializeSopPage() {
     }
 
     function showSection(sectionId) {
-        sections.forEach(section => section.classList.add("hidden"));
         const targetSection = document.getElementById(sectionId);
-        if (targetSection) targetSection.classList.remove("hidden");
-        if (sectionId === "sop-control") {
+        if (!targetSection || !targetSection.classList.contains("sop-view")) return;
+        const canView = hasPermission("documents.sop.view");
+        const canCreate = hasPermission("documents.sop.create");
+        if (!canView) {
+            document.querySelectorAll(".sop-view").forEach(section => section.classList.add("hidden"));
+            return;
+        }
+        if (!canCreate) sectionId = "sop-catalog";
+        const mainSections = ["sop-control", "sop-workflow-summary", "sop-catalog"];
+        const secondarySections = ["sop-create", "sop-drafts", "sop-validation", "sop-approval", "sop-workflow"];
+        if (sectionId === "sop-control" && canCreate) {
+            secondarySections.forEach(id => document.getElementById(id)?.classList.add("hidden"));
+            applySopPermissions();
+            document.getElementById("sop-workflow")?.classList.add("hidden");
+            mainSections.forEach(id => document.getElementById(id)?.classList.remove("hidden"));
+            mainSections.forEach(id => {
+                const section = document.getElementById(id);
+                if (section) section.classList.toggle("hidden", id === "sop-workflow");
+            });
             refreshWorkflowCounts();
             loadMyDrafts();
+        } else {
+            document.querySelectorAll(".sop-view").forEach(section => section.classList.add("hidden"));
+            mainSections.forEach(id => {
+                const section = document.getElementById(id);
+                if (section) section.classList.toggle("hidden", id !== sectionId);
+            });
+            secondarySections.forEach(id => {
+                const section = document.getElementById(id);
+                if (section) section.classList.toggle("hidden", id !== sectionId);
+            });
         }
         if (sectionId === "sop-workflow") loadSopWorkflow();
+        if (sectionId === "sop-catalog") loadSopCatalog();
         window.scrollTo({ top: 0, behavior: "smooth" });
     }
+
     window.addEventListener("focus", () => {
         if (!document.getElementById("sop-control")?.classList.contains("hidden")) refreshWorkflowCounts();
     });
@@ -295,7 +330,16 @@ async function initializeSopPage() {
             alert("Workflow detail will be displayed here.");
         });
     });
-    showSection("sop-control");
+    applySopPermissions();
+    if (hasPermission("documents.sop.view")) {
+        if (hasPermission("documents.sop.create")) {
+            showSection("sop-control");
+            loadSopCatalog();
+        } else {
+            showSection("sop-catalog");
+            loadSopCatalog();
+        }
+    }
 
 
 
@@ -564,7 +608,9 @@ async function initializeSopPage() {
                 sopForm.reset();
                 editingRevisionId = null;
                 setCreateMode();
-                showSection("sop-control");
+                applySopPermissions();
+                showSection(hasPermission("documents.sop.create") ? "sop-control" : "sop-catalog");
+                loadSopCatalog();
                 await loadMyDrafts();
                 await loadSopCatalog();
                 return;
@@ -821,13 +867,13 @@ async function initializeSopPage() {
             row.innerHTML = "<td>"+escapeHtml(formatDate(current?.released_at||current?.created_at||sop.created_at))+"</td>"+
                 "<td>"+renderStatusBadge(status)+"</td>"+
                 "<td>"+escapeHtml(sop.sop_code||"Unassigned")+"</td>"+
-                "<td>"+renderRevisionBadge(current?.revision_code,status)+"</td>"+
                 "<td>"+escapeHtml(sop.workshops?.name||"")+"</td>"+
                 "<td>"+escapeHtml(sop.process_areas?.name||"")+"</td>"+
                 "<td>"+escapeHtml(sop.models?.name||"")+"</td>"+
                 "<td>"+escapeHtml(sop.part_names?.name||"")+"</td>"+
                 "<td>"+escapeHtml(sop.part_number||"")+"</td>"+
-                "<td>"+escapeHtml(sop.operation_name||"")+"</td>";
+                "<td>"+escapeHtml(sop.operation_name||"")+"</td>"+
+                "<td>"+renderRevisionBadge(current?.revision_code,status)+"</td>";
             body.appendChild(row);
         });
     }
