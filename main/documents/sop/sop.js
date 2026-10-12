@@ -783,6 +783,23 @@ async function initializeSopPage() {
         if (viewButton) { viewSop(viewButton.dataset.sopId); return; }
         const editButton = event.target.closest(".edit-draft-button");
         if (editButton) { closeSopModal(); await openEditSop(editButton.dataset.sopId); return; }
+        const discardRevisionButton = event.target.closest(".discard-revision-button");
+        if (discardRevisionButton) {
+            const revisionCode = discardRevisionButton.dataset.revisionCode || "this revision";
+            const reason = prompt("Why are you discarding " + revisionCode + "? This note will be saved in the audit history.", "Change no longer required");
+            if (reason === null) return;
+            if (!reason.trim()) { alert("Enter a reason to discard this revision."); return; }
+            if (!confirm("Discard " + revisionCode + "? The released revision remains unchanged, and this candidate cannot be resubmitted.")) return;
+            discardRevisionButton.disabled = true;
+            try {
+                const { error } = await supabaseClient.rpc("discard_sop_revision", { p_sop_id: Number(discardRevisionButton.dataset.sopId), p_revision_id: Number(discardRevisionButton.dataset.revisionId), p_reason: reason.trim() });
+                if (error) throw error;
+                closeSopModal();
+                await Promise.all([loadMyDrafts(), loadSopCatalog(), refreshWorkflowCounts()]);
+                alert(revisionCode + " was discarded. The released revision remains unchanged.");
+            } catch (error) { console.error("Error discarding SOP revision:",error); alert("Could not discard this revision: " + (error.message || "Apply the SOP revision lifecycle migration and check permissions.")); discardRevisionButton.disabled = false; }
+            return;
+        }
         const deleteButton = event.target.closest(".delete-draft-button");
         if (deleteButton) {
             if (!confirm("Delete this Draft SOP permanently? This action cannot be undone.")) return;
