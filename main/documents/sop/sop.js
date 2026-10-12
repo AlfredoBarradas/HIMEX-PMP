@@ -77,7 +77,7 @@ async function initializeSopPage() {
         const body = document.getElementById(sectionId + "-body"); if (!body) return;
         body.innerHTML = '<tr><td colspan="11">Loading...</td></tr>';
         try {
-            const { data: instances, error } = await supabaseClient.from("workflow_instances").select("id,source_document_id,source_revision_id,status,current_node_id,started_at,completed_at").order("started_at", { ascending: false }); if (error) throw error;
+            const { data: instances, error } = await supabaseClient.from("workflow_instances").select("id,source_document_id,source_revision_id,status,current_node_id,started_at,completed_at").in("status", ["active", "in_progress", "pending"]).order("started_at", { ascending: false }); if (error) throw error;
             const docIds = [...new Set((instances || []).map(item => item.source_document_id).filter(Boolean))], revisionIds = [...new Set((instances || []).map(item => item.source_revision_id).filter(Boolean))];
             const [docs,revisions,nodes] = await Promise.all([docIds.length ? supabaseClient.from("sop_documents").select("id,sop_code,part_number,operation_name,created_at,created_by,workshops(name),process_areas(name),models(name),part_names(name)").in("id",docIds) : Promise.resolve({data:[],error:null}),revisionIds.length ? supabaseClient.from("sop_revisions").select("id,revision_code,status,created_at,created_by").in("id",revisionIds) : Promise.resolve({data:[],error:null}),supabaseClient.from("workflow_nodes").select("id,label,node_type")]);
             for (const result of [docs,revisions,nodes]) if (result.error) throw result.error;
