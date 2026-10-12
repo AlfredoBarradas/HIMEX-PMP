@@ -5,7 +5,7 @@
 .section-header p{margin:0;color:var(--sop-muted)}
 #sop-control{margin-bottom:64px}
 .sop-control-grid,.sop-workflow-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--sop-line);border-radius:var(--sop-radius);overflow:hidden;background:var(--sop-panel)}
-.sop-control-grid{margin-bottom:18px}
+.sop-control-grid{grid-template-columns:repeat(2,minmax(0,1fr));width:min(100%,820px);margin-bottom:18px}
 .sop-control-tile,.sop-workflow-tile{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0;min-height:84px;width:100%;padding:18px 20px;background:var(--sop-panel);border:0;border-right:1px solid var(--sop-line);border-bottom:1px solid var(--sop-line);color:var(--sop-ink);text-align:left;font-family:inherit;font-size:16px;font-weight:700;line-height:1.35;cursor:pointer}
 .sop-control-tile span,.sop-workflow-tile span{font-size:16px;font-weight:700;line-height:1.35}
 .sop-control-tile:nth-child(2n){border-right:0}
@@ -15,7 +15,7 @@
 .sop-workflow-grid .validation-tile,.sop-workflow-grid .approval-tile{border-bottom:0}
 .sop-workflow-tile p{margin:0;color:var(--sop-muted);font-size:13px;font-weight:400}
 .sop-control-tile strong,.sop-workflow-tile strong{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-width:36px;height:36px;padding:0 9px;border-radius:999px;background:var(--sop-page);color:var(--sop-accent-dark);font-size:17px}
-.sop-control-tile:hover,.sop-workflow-tile:hover{background:#f7fcfc}
+.sop-control-tile:hover,.sop-workflow-tile:hover{background:#f7fcfc}.sop-control-tile.create-sop-button,.sop-control-tile.create-sop-button:hover{background:var(--sop-accent);border-color:var(--sop-accent);color:#fff}.sop-control-tile.create-sop-button:hover{background:var(--sop-accent-dark)}
 .sop-catalog{margin:0;min-width:0}
 .sop-catalog .section-header{margin:0 0 20px}
 .catalog-search{margin:18px 0}
@@ -63,7 +63,7 @@
 .sop-field-invalid label{color:#b91c1c;font-weight:700}
 .sop-field-error{display:block;margin-top:4px;color:#b91c1c;font-size:12px}
 .status-badge,.revision-badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:700;white-space:nowrap;background:#eef2f7;color:#334155}
-.status-badge.status-in_progress,.status-badge.status-active,.status-badge.status-in_approval,.revision-badge.status-in_approval{background:#dbeafe;color:#1d4ed8}
+.status-badge.status-in_progress,.status-badge.status-active,.status-badge.status-in_approval,.status-badge.status-approval,.revision-badge.status-in_approval,.revision-badge.status-approval{background:#dbeafe;color:#1d4ed8}
 .status-badge.status-validation,.status-badge.status-in_validation,.revision-badge.status-in_validation{background:#fef3c7;color:#92400e}
 .status-badge.status-completed,.status-badge.status-released{background:#dcfce7;color:#166534}
 .status-badge.status-rejected,.status-badge.status-obsolete{background:#fee2e2;color:#991b1b}
