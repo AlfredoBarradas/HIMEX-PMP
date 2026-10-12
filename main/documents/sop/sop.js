@@ -82,11 +82,17 @@ async function initializeSopPage() {
             const [docs,revisions,nodes] = await Promise.all([docIds.length ? supabaseClient.from("sop_documents").select("id,sop_code,part_number,operation_name,created_at,created_by,workshops(name),process_areas(name),models(name),part_names(name)").in("id",docIds) : Promise.resolve({data:[],error:null}),revisionIds.length ? supabaseClient.from("sop_revisions").select("id,revision_code,status,created_at,created_by").in("id",revisionIds) : Promise.resolve({data:[],error:null}),supabaseClient.from("workflow_nodes").select("id,label,node_type")]);
             for (const result of [docs,revisions,nodes]) if (result.error) throw result.error;
             const docMap = new Map((docs.data || []).map(item => [String(item.id),item])), revisionMap = new Map((revisions.data || []).map(item => [String(item.id),item])), nodeMap = new Map((nodes.data || []).map(item => [String(item.id),item]));
-            let rows = (instances || []).map(instance => { const doc=docMap.get(String(instance.source_document_id))||{}, revision=revisionMap.get(String(instance.source_revision_id))||{}, node=nodeMap.get(String(instance.current_node_id))||{}, status=String(instance.status||"pending").toLowerCase(), stage=status==="completed"?"Completed":status==="rejected"?"Rejected":String(node.label||node.node_type||"In progress"); return {instance,doc,revision,node,status,stage}; });
+            const latestBySop = new Map();
+            (instances || []).forEach(instance => { const key=String(instance.source_document_id || ""); if(key && !latestBySop.has(key)) latestBySop.set(key,instance); });
+            let rows = [...latestBySop.values()].map(instance => { const doc=docMap.get(String(instance.source_document_id))||{}, revision=revisionMap.get(String(instance.source_revision_id))||{}, node=nodeMap.get(String(instance.current_node_id))||{}, status=String(instance.status||"pending").toLowerCase(), stage=status==="completed"?"Completed":status==="rejected"?"Rejected":String(node.label||node.node_type||"In progress"); return {instance,doc,revision,node,status,stage}; });
+            const creatorIds=[...new Set(rows.map(row=>row.revision.created_by||row.doc.created_by).filter(Boolean))];
+            const profileResult=creatorIds.length?await supabaseClient.from("user_profiles").select("id,full_name").in("id",creatorIds):{data:[],error:null};
+            if(profileResult.error)console.warn("Creator names unavailable in workflow catalog:",profileResult.error);
+            const creatorMap=new Map((profileResult.data||[]).map(profile=>[String(profile.id),profile.full_name||"Unknown"]));
             if (sectionId === "sop-validation") rows = rows.filter(row => /validat/i.test(row.stage) && !["completed","rejected"].includes(row.status));
             if (sectionId === "sop-approval") rows = rows.filter(row => /approv/i.test(row.stage) && !["completed","rejected"].includes(row.status));
             if (!rows.length) { body.innerHTML = '<tr><td colspan="11">No records found.</td></tr>'; return; }
-            body.innerHTML = rows.map(({instance,doc,revision,status,stage}) => '<tr class="catalog-clickable-row workflow-clickable-row" tabindex="0" role="button" data-sop-id="' + escapeHtml(doc.id || instance.source_document_id) + '" data-instance-id="' + escapeHtml(instance.id) + '" aria-label="Review SOP ' + escapeHtml(doc.sop_code || "Unassigned") + '"><td>' + escapeHtml(formatDate(instance.started_at || doc.created_at)) + '</td><td>' + renderStatusBadge(status === "active" || status === "in_progress" ? stage : status) + '</td><td>' + escapeHtml(doc.sop_code || "Unassigned") + '</td><td>' + escapeHtml(doc.workshops?.name || "") + '</td><td>' + escapeHtml(doc.process_areas?.name || "") + '</td><td>' + escapeHtml(doc.models?.name || "") + '</td><td>' + escapeHtml(doc.part_names?.name || "") + '</td><td>' + escapeHtml(doc.part_number || "") + '</td><td>' + escapeHtml(doc.operation_name || "") + '</td><td>' + renderRevisionBadge(revision.revision_code,revision.status) + '</td><td>' + escapeHtml(revision.created_by || doc.created_by || "") + '</td></tr>').join("");
+            body.innerHTML = rows.map(({instance,doc,revision,status,stage}) => '<tr class="catalog-clickable-row workflow-clickable-row" tabindex="0" role="button" data-sop-id="' + escapeHtml(doc.id || instance.source_document_id) + '" data-instance-id="' + escapeHtml(instance.id) + '" aria-label="Review SOP ' + escapeHtml(doc.sop_code || "Unassigned") + '"><td>' + escapeHtml(formatDate(instance.started_at || doc.created_at)) + '</td><td>' + renderStatusBadge(status === "active" || status === "in_progress" ? stage : status) + '</td><td>' + escapeHtml(doc.sop_code || "Unassigned") + '</td><td>' + escapeHtml(doc.workshops?.name || "") + '</td><td>' + escapeHtml(doc.process_areas?.name || "") + '</td><td>' + escapeHtml(doc.models?.name || "") + '</td><td>' + escapeHtml(doc.part_names?.name || "") + '</td><td>' + escapeHtml(doc.part_number || "") + '</td><td>' + escapeHtml(doc.operation_name || "") + '</td><td>' + renderRevisionBadge(revision.revision_code,revision.status) + '</td><td>' + escapeHtml(creatorMap.get(String(revision.created_by || doc.created_by || "")) || "Unknown") + '</td></tr>').join("");
         } catch (error) { console.error("Unable to load SOP task catalog:",error); body.innerHTML = '<tr><td colspan="11">Unable to load records. Check permissions and the browser console.</td></tr>'; }
     }
     function showSection(sectionId) {
@@ -793,9 +799,11 @@ async function initializeSopPage() {
                 p_metadata: { source: "my_drafts", submitted_from: "My Drafts" }
             });
             if (error) throw error;
+            closeSopModal();
+            showSection("sop-drafts");
             alert("SOP submitted. The workflow has started.");
-            await loadMyDrafts();
-            await loadSopCatalog();
+            await Promise.all([loadMyDrafts(), loadSopCatalog(), refreshWorkflowCounts()]);
+            loadSopWorkflow();
         } catch (error) {
             console.error("Error submitting draft for validation:", error);
             alert("Could not submit this draft: " + (error.message || "Check workflow permissions and configuration."));
