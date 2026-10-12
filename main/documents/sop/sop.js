@@ -1065,98 +1065,17 @@ async function initializeSopPage() {
 
 
     function renderSopModal(sop) {
-        const modalBody = document.querySelector(".sop-modal-body");
-        const revisions = sop.sop_revisions || [];
-        const currentRevision = [...revisions].sort((a, b) => (Number(b.revision_number) || 0) - (Number(a.revision_number) || 0)).find(revision => String(revision.status || "").toLowerCase() === "released") || [...revisions].sort((a, b) => (Number(b.revision_number) || 0) - (Number(a.revision_number) || 0))[0];
-        const orderedRevisions = [...revisions].sort((a, b) => (Number(b.revision_number) || 0) - (Number(a.revision_number) || 0));
-        const revisionHistoryHtml = orderedRevisions.length > 1 ? `
-            <details class="sop-revision-history">
-                <summary>Revision History (${orderedRevisions.length})</summary>
-                <div class="sop-revision-history-list">
-                    ${orderedRevisions.map(revision => `
-                        <details class="sop-revision-history-item">
-                            <summary>
-                                <strong>${renderRevisionBadge(revision.revision_code, revision.status)}</strong>
-                                <span class="status-badge status-${statusKey(revision.status)}">${escapeHtml(statusLabel(revision.status))}</span>
-                                <small>${escapeHtml(formatDate(revision.released_at || revision.created_at))}</small>
-                            </summary>
-                            <div class="sop-revision-history-details">
-                                <p><strong>Change Summary</strong></p>
-                                <p>${escapeHtml(revision.description || "No change summary recorded.")}</p>
-                                <p><strong>Status:</strong> ${renderStatusBadge(revision.status)}</p>
-                                <p><strong>Created:</strong> ${escapeHtml(formatDate(revision.created_at))}</p>
-                                ${revision.released_at ? `<p><strong>Released:</strong> ${escapeHtml(formatDate(revision.released_at))}</p>` : ""}
-                            </div>
-                        </details>
-                    `).join("")}
-                </div>
-            </details>
-        ` : "";
-        modalBody.innerHTML = `
-            ${revisionHistoryHtml}
-            <div class="sop-modal-grid">
-                <div class="sop-modal-field">
-                    <span>SOP Code</span>
-                    <strong>${sop.sop_code || "Unassigned"}</strong>
-                </div>
-                <div class="sop-modal-field">
-                    <span>Revision</span>
-                    <strong>${renderRevisionBadge(currentRevision?.revision_code, currentRevision?.status)}</strong>
-                </div>
-                <div class="sop-modal-field">
-                    <span>Workshop</span>
-                    <strong>${sop.workshops?.name || ""}</strong>
-                </div>
-                <div class="sop-modal-field">
-                    <span>Process Area</span>
-                    <strong>${sop.process_areas?.name || ""}</strong>
-                </div>
-                <div class="sop-modal-field">
-                    <span>Model Series</span>
-                    <strong>${sop.models?.model_series?.name || ""}</strong>
-                </div>
-                <div class="sop-modal-field">
-                    <span>Model</span>
-                    <strong>${sop.models?.name || ""}</strong>
-                </div>
-                <div class="sop-modal-field">
-                    <span>Part Name</span>
-                    <strong>${sop.part_names?.name || ""}</strong>
-                </div>
-                <div class="sop-modal-field">
-                    <span>Part Number</span>
-                    <strong>${sop.part_number || ""}</strong>
-                </div>
-                <div class="sop-modal-field">
-                    <span>Operation Name</span>
-                    <strong>${sop.operation_name || ""}</strong>
-                </div>
-                <div class="sop-modal-field">
-                    <span>Status</span>
-                    <strong>${currentRevision?.status || ""}</strong>
-                </div>
-                <div class="sop-modal-field sop-modal-field-full">
-                    <span>Description</span>
-                    <p>${currentRevision?.description || ""}</p>
-                </div>
-                ${String(currentRevision?.status || "").toLowerCase() === "draft" ? `
-                    <div class='sop-modal-actions'>
-                        <button type='button' class='secondary-button edit-draft-button' data-sop-id='${sop.id}'>Edit Draft</button>
-                        <button type='button' class='danger-button delete-draft-button' data-sop-id='${sop.id}'>Delete Draft</button>
-                        <button type='button' class='primary-button draft-submit-button' data-sop-id='${sop.id}' data-revision-id='${currentRevision.id}' data-sop-code='${escapeHtml(sop.sop_code || "Unassigned")}' data-revision-code='${escapeHtml(currentRevision.revision_code || "")}'>Submit for Validation</button>
-                    </div>
-                ` : ""}
-                ${String(currentRevision?.status || "").toLowerCase() === "released" ? `
-                    <div class="sop-modal-actions">
-                        <button type="button" class="remark-button modal-revision-button" data-sop-id="${sop.id}">
-                            Revision
-                        </button>
-                    </div>
-                ` : ""}
-            </div>
-        `;
+        const modalBody = document.querySelector("#sop-modal .sop-modal-body");
+        const revisions = [...(sop.sop_revisions || [])].sort((a,b)=>(Number(b.revision_number)||0)-(Number(a.revision_number)||0));
+        const releasedRevision = revisions.find(revision => String(revision.status||"").toLowerCase()==="released");
+        const latestRevision = revisions[0];
+        const draftCandidate = latestRevision && String(latestRevision.status||"").toLowerCase()==="draft" && (!releasedRevision || Number(latestRevision.revision_number)>Number(releasedRevision.revision_number)) ? latestRevision : null;
+        const currentRevision = releasedRevision || latestRevision;
+        const revisionHistoryHtml = revisions.length > 1 ? "<details class=\"sop-revision-history\"><summary>Revision History ("+revisions.length+")</summary><div class=\"sop-revision-history-list\">"+revisions.map(revision=>"<details class=\"sop-revision-history-item\"><summary><strong>"+renderRevisionBadge(revision.revision_code,revision.status)+"</strong><span class=\"status-badge status-"+statusKey(revision.status)+"\">"+escapeHtml(statusLabel(revision.status))+"</span><small>"+escapeHtml(formatDate(revision.released_at||revision.created_at))+"</small></summary><div class=\"sop-revision-history-details\"><p><strong>Change Summary</strong></p><p>"+escapeHtml(revision.description||"No change summary recorded.")+"</p><p><strong>Status:</strong> "+renderStatusBadge(revision.status)+"</p><p><strong>Created:</strong> "+escapeHtml(formatDate(revision.created_at))+"</p>"+(revision.released_at?"<p><strong>Released:</strong> "+escapeHtml(formatDate(revision.released_at))+"</p>":"")+"</div></details>").join("")+"</div></details>" : "";
+        const candidateHtml = draftCandidate && releasedRevision ? "<section class=\"sop-draft-candidate\"><h3>Revision in Progress · "+renderRevisionBadge(draftCandidate.revision_code,draftCandidate.status)+"</h3><p>"+escapeHtml(draftCandidate.description||"No change summary recorded.")+"</p><p>The released revision remains "+escapeHtml(releasedRevision.revision_code)+" until this candidate completes the workflow.</p><div class=\"sop-modal-actions\"><button type=\"button\" class=\"secondary-button edit-draft-button\" data-sop-id=\""+sop.id+"\">Edit Draft</button><button type=\"button\" class=\"danger-button discard-revision-button\" data-sop-id=\""+sop.id+"\" data-revision-id=\""+draftCandidate.id+"\" data-revision-code=\""+escapeHtml(draftCandidate.revision_code||"")+"\">Discard Revision</button><button type=\"button\" class=\"primary-button draft-submit-button\" data-sop-id=\""+sop.id+"\" data-revision-id=\""+draftCandidate.id+"\" data-sop-code=\""+escapeHtml(sop.sop_code||"Unassigned")+"\" data-revision-code=\""+escapeHtml(draftCandidate.revision_code||"")+"\">Submit for Validation</button></div></section>" : "";
+        const initialDraftActions = currentRevision && String(currentRevision.status||"").toLowerCase()==="draft" && !releasedRevision ? "<div class=\"sop-modal-actions\"><button type=\"button\" class=\"secondary-button edit-draft-button\" data-sop-id=\""+sop.id+"\">Edit Draft</button><button type=\"button\" class=\"danger-button delete-draft-button\" data-sop-id=\""+sop.id+"\">Delete Draft</button><button type=\"button\" class=\"primary-button draft-submit-button\" data-sop-id=\""+sop.id+"\" data-revision-id=\""+currentRevision.id+"\" data-sop-code=\""+escapeHtml(sop.sop_code||"Unassigned")+"\" data-revision-code=\""+escapeHtml(currentRevision.revision_code||"")+"\">Submit for Validation</button></div>" : "";
+        modalBody.innerHTML = revisionHistoryHtml+"<div class=\"sop-modal-grid\"><div class=\"sop-modal-field\"><span>SOP Code</span><strong>"+escapeHtml(sop.sop_code||"Unassigned")+"</strong></div><div class=\"sop-modal-field\"><span>Released Revision</span><strong>"+renderRevisionBadge(currentRevision?.revision_code,currentRevision?.status)+"</strong></div><div class=\"sop-modal-field\"><span>Workshop</span><strong>"+escapeHtml(sop.workshops?.name||"")+"</strong></div><div class=\"sop-modal-field\"><span>Process Area</span><strong>"+escapeHtml(sop.process_areas?.name||"")+"</strong></div><div class=\"sop-modal-field\"><span>Model Series</span><strong>"+escapeHtml(sop.models?.model_series?.name||"")+"</strong></div><div class=\"sop-modal-field\"><span>Model</span><strong>"+escapeHtml(sop.models?.name||"")+"</strong></div><div class=\"sop-modal-field\"><span>Part Name</span><strong>"+escapeHtml(sop.part_names?.name||"")+"</strong></div><div class=\"sop-modal-field\"><span>Part Number</span><strong>"+escapeHtml(sop.part_number||"")+"</strong></div><div class=\"sop-modal-field\"><span>Operation Name</span><strong>"+escapeHtml(sop.operation_name||"")+"</strong></div><div class=\"sop-modal-field\"><span>Status</span><strong>"+escapeHtml(currentRevision?.status||"")+"</strong></div><div class=\"sop-modal-field sop-modal-field-full\"><span>Description</span><p>"+escapeHtml(currentRevision?.description||"")+"</p></div>"+initialDraftActions+(String(currentRevision?.status||"").toLowerCase()==="released"?"<div class=\"sop-modal-actions\"><button type=\"button\" class=\"remark-button modal-revision-button\" data-sop-id=\""+sop.id+"\">Revision</button></div>":"")+"</div>"+candidateHtml;
     }
-
     function openRevisionModal(sop) {
         const modalBody = document.querySelector(".sop-modal-body");
         const revisions = sop.sop_revisions || [];
