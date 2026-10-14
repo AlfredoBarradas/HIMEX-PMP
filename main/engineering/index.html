@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>PMP Engineering</title>
+    <link rel="icon" href="/pmp-favicon.ico">
+
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body 
+data-page="engineering" 
+data-page-title="Engineering" 
+data-page-description="Process Control" 
+class="auth-pending">
+
+    <div class="app">
+
+        <!-- Sidebar -->
+        <div id="sidebar-container"></div>
+
+        <!-- Main content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header id="topbar-container"></header>
+
+            <!-- Dashboard content -->
+            <section class="content">
+                <h2>Process Overview</h2>
+                <div class="dashboard-grid">
+                    <a href="/main/engineering/partinfo/" class="dashboard-card"><h3>Part Numbers</h3><p>0</p></a>
+                    <a href="/main/engineering/draws/" class="dashboard-card"><h3>Drawings</h3><p>0</p></a>
+                    <a href="/main/engineering/sop/" class="dashboard-card"><h3>SOP</h3><p>pending</p></a>
+                    <a href="/main/engineering/layouts/" class="dashboard-card"><h3>Layouts</h3><p>pending</p></a>
+                    <a href="/main/engineering/reworks/" class="dashboard-card"><h3>MDR - REWORKS</h3><p>pending</p></a>
+                    <a href="/main/engineering/technicals/" class="dashboard-card"><h3>Technical Information</h3><p>pending</p></a>
+                    <a href="/main/engineering/flow_charts/" class="dashboard-card"><h3>Flow Charts</h3><p>pending</p></a>
+                    <a href="/main/engineering/procedures/" class="dashboard-card"><h3>Procedures</h3><p>pending</p></a>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/supabase.js"></script>
+    <script src="/js/auth.js"></script>
+
+    <script src="/components/sidebar/sidebar.js"></script>
+    <script src="/components/topbar/topbar.js"></script>
+
+
+</body>
+
+</html>
