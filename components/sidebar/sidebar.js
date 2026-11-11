@@ -38,5 +38,4 @@
         });
     }
     window.PMPSidebar = { init: initSidebar, update: setActiveSidebarItem };
-    document.addEventListener("DOMContentLoaded", () => initSidebar().catch(console.error));
 })();
