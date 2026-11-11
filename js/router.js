@@ -6,7 +6,7 @@
 
     function normalizePath(pathname) {
         if (!pathname || pathname === "/") return "/";
-        return pathname.replace(/\\/+$/, "") + "/";
+        return pathname.replace(/\/+$/, "") + "/";
     }
 
     function getRoute(pathname) {
@@ -180,6 +180,7 @@
         const targetUrl = new URL(url, window.location.origin);
         if (targetUrl.origin !== window.location.origin) return;
         const pathname = normalizePath(targetUrl.pathname);
+        targetUrl.pathname = pathname;
         const route = getRoute(pathname);
         if (!route) {
             window.location.assign(targetUrl.href);
