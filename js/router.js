@@ -268,7 +268,7 @@
     document.addEventListener("click", event => {
         if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
         const anchor = event.target.closest("a[href]");
-        if (!anchor || anchor.target || anchor.hasAttribute("download")) return;
+        if (!anchor || anchor.target || anchor.hasAttribute("download") || anchor.getAttribute("href").startsWith("#")) return;
 
         const url = new URL(anchor.href, window.location.href);
         if (url.origin !== window.location.origin || !getRoute(url.pathname)) return;
