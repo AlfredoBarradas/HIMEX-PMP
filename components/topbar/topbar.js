@@ -23,5 +23,4 @@
         } else node?.remove();
     }
     window.PMPTopbar = { init: initTopbar, update: updateTopbar };
-    document.addEventListener("DOMContentLoaded", () => initTopbar().catch(console.error));
 })();
