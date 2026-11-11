@@ -2,6 +2,7 @@
 let roles = [];
     let permissions = [];
     let editingRoleId = null;
+    let rolesMountToken = 0;
 
 
     async function initializeData() {
@@ -511,9 +512,13 @@ let roles = [];
 window.PMPModules = window.PMPModules || {};
 window.PMPModules.Roles = {
     async mount() {
+        const token = ++rolesMountToken;
         await initializeData();
+        if (token !== rolesMountToken) return;
         initializeEvents();
     },
-    async unmount() {}
+    async unmount() {
+        rolesMountToken += 1;
+    }
 };
 })();
