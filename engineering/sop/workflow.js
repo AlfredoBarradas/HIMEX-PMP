@@ -1,3 +1,4 @@
+async function mountSopWorkflow() {
     const validationBody = document.getElementById("sop-validation-body");
     const approvalBody = document.getElementById("sop-approval-body");
     const workflowBody = document.getElementById("sop-workflow-body");
@@ -168,7 +169,15 @@
             if(error)throw error;
             alert(isReject?"Revision rejected permanently. The released revision remains unchanged.":isReturn?"Revision returned to Draft. The same revision code can be corrected and resubmitted.":"Workflow task completed successfully.");
             document.getElementById("workflow-review-modal")?.classList.add("hidden");
-            await initializeSopWorkflow();
+            await mountSopWorkflow();
         }catch(error){console.error("Workflow action failed:",error);alert("The workflow action failed: "+(error.message||"Check permissions and RPC parameters."));button.disabled=false;}
     });
 }
+
+}
+
+window.PMPModules = window.PMPModules || {};
+window.PMPModules.SOPWorkflow = {
+    async mount() { await mountSopWorkflow(); },
+    async unmount() { window.dispatchEvent(new Event("pmp:workflow-unmount")); }
+};
