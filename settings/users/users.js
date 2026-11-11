@@ -1,6 +1,9 @@
     let users = [];
     let editingUserId = null;
-    async function initializeData() {\n        await Promise.all([loadUsers(), loadRoles()]);\n    }
+    let usersModuleController = null;
+    async function initializeData() {
+        await Promise.all([loadUsers(), loadRoles()]);
+    }
     async function loadUsers() {
         const tableBody = document.getElementById("users-table-body");
         if (!tableBody) return;
@@ -35,7 +38,7 @@
             roleSelect.appendChild(option);
         });
     }
-    function initializeEvents() {
+    function initializeEvents(signal) {
         const createUserButton = document.getElementById("create-user-button");
         const closeUserButton = document.getElementById("close-user-modal");
         const cancelUserButton = document.getElementById("cancel-user-button");
@@ -415,8 +418,15 @@
 
 
 window.PMPModules = window.PMPModules || {};
-window.PMPModules.Users = {\n    async mount() { await initializeData(); initializeEvents(); },
+window.PMPModules.Users = {
+    async mount() {
+        usersModuleController?.abort();
+        usersModuleController = new AbortController();
+        await initializeData();
+        initializeEvents(usersModuleController.signal);
+    },
     async unmount() {
-        // The module view is removed by the router. Rebinding occurs only on the next mount.
+        usersModuleController?.abort();
+        usersModuleController = null;
     }
 };
