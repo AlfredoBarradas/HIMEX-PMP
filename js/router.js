@@ -282,5 +282,8 @@
         navigate(window.location.href, { push: false });
     });
 
-    document.addEventListener("DOMContentLoaded", start, { once: true });
+    document.addEventListener("DOMContentLoaded", () => {
+        navigationPending = true;
+        start().finally(() => { navigationPending = false; });
+    }, { once: true });
 })();
