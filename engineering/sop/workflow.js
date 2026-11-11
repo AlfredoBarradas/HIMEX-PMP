@@ -1,3 +1,4 @@
+(() => {
 async function mountSopWorkflow() {
     const validationBody = document.getElementById("sop-validation-body");
     const approvalBody = document.getElementById("sop-approval-body");
@@ -180,3 +181,4 @@ window.PMPModules.SOPWorkflow = {
     async mount() { await mountSopWorkflow(); },
     async unmount() { window.dispatchEvent(new Event("pmp:workflow-unmount")); }
 };
+})();
