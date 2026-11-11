@@ -85,7 +85,7 @@
                 closeModal();
                 closeResetPasswordModal();
             }
-        });
+        }, { signal });
         document.getElementById("reset-password-form")?.addEventListener("submit", handleResetPasswordSubmit);
         document.getElementById("close-reset-password")?.addEventListener("click", closeResetPasswordModal);
         document.getElementById("cancel-reset-password")?.addEventListener("click", closeResetPasswordModal);
