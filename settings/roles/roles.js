@@ -1,23 +1,12 @@
-(async () => {
     let roles = [];
     let permissions = [];
     let editingRoleId = null;
 
 
     async function initializePage() {
-        const authData = await requireAuth();
-        if (!authData?.user) {
-            window.location.replace("/auth/");
-            return;
-        }
-        if (!isAdmin()) {
-            window.location.replace("/");
-            return;
-        }
         await loadRoles();
         await loadPermissions();
         initializeEvents();
-        document.body.classList.remove("auth-pending");
     }
 
 
@@ -517,5 +506,16 @@
         await loadRoles();
     }
 
-    await initializePage();
-})();
+
+
+window.PMPModules = window.PMPModules || {};
+window.PMPModules.Roles = {
+    async mount() {
+        await loadRoles();
+        await loadPermissions();
+        initializeEvents();
+    },
+    async unmount() {
+        // The module view is removed by the router. Rebinding occurs only on the next mount.
+    }
+};
