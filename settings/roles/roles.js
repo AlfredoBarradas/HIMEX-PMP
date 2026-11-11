@@ -1,4 +1,5 @@
-    let roles = [];
+(() => {
+let roles = [];
     let permissions = [];
     let editingRoleId = null;
 
@@ -515,3 +516,4 @@ window.PMPModules.Roles = {
     },
     async unmount() {}
 };
+})();
