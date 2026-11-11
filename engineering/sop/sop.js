@@ -1,12 +1,3 @@
-document.addEventListener("DOMContentLoaded", async () => {
-    const authData = await initializeSupabaseAuth();
-    if (!authData?.user) {
-        window.location.href = "/auth/";
-        return;
-    }
-    await initializeSopPage();
-});
-
 async function initializeSopPage() {
     const sections = document.querySelectorAll(".sop-view");
     const navigationButtons = document.querySelectorAll("[data-section]");
@@ -135,12 +126,15 @@ async function initializeSopPage() {
         window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
+    const moduleAbortController = new AbortController();
+    const moduleSignal = moduleAbortController.signal;
+    window.addEventListener("pmp:sop-unmount", () => moduleAbortController.abort(), { once: true });
     window.addEventListener("focus", () => {
         if (!document.getElementById("sop-control")?.classList.contains("hidden")) refreshWorkflowCounts();
-    });
+    }, { signal: moduleSignal });
     document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "visible" && !document.getElementById("sop-control")?.classList.contains("hidden")) refreshWorkflowCounts();
-    });
+    }, { signal: moduleSignal });
     function setFormEditable(editable) {
         document.getElementById("sop-workshop").disabled = !editable;
         document.getElementById("sop-process").disabled = !editable;
@@ -910,8 +904,8 @@ async function initializeSopPage() {
         ["filter-area","filter-process","filter-series","filter-model","filter-part-name","filter-created-by","filter-status"].forEach(id=>document.getElementById(id)?.addEventListener("change",applySopCatalogFilters));
         document.getElementById("clear-sop-filters")?.addEventListener("click",()=>{const search=document.getElementById("sop-search-box");if(search)search.value="";["filter-area","filter-process","filter-series","filter-model","filter-part-name","filter-created-by","filter-status"].forEach(id=>{const select=document.getElementById(id);if(select)select.value="";});applySopCatalogFilters();});
         document.querySelectorAll("[data-table-search]").forEach(input=>input.addEventListener("input",()=>{const body=document.getElementById(input.dataset.tableSearch);const query=input.value.trim().toLowerCase();body?.querySelectorAll("tr").forEach(row=>row.hidden=Boolean(query)&&!row.textContent.toLowerCase().includes(query));}));
-        document.addEventListener("click",event=>{const row=event.target.closest("#sop-catalog-body .catalog-clickable-row");if(row&&!event.target.closest("button,a,input,select,textarea,label"))viewSop(row.dataset.sopId);});
-        document.addEventListener("keydown",event=>{const row=event.target.closest("#sop-catalog-body .catalog-clickable-row");if(row&&(event.key==="Enter"||event.key===" ")){event.preventDefault();viewSop(row.dataset.sopId);}});
+        document.addEventListener("click",event=>{const row=event.target.closest("#sop-catalog-body .catalog-clickable-row");if(row&&!event.target.closest("button,a,input,select,textarea,label"))viewSop(row.dataset.sopId);},{signal:moduleSignal});
+        document.addEventListener("keydown",event=>{const row=event.target.closest("#sop-catalog-body .catalog-clickable-row");if(row&&(event.key==="Enter"||event.key===" ")){event.preventDefault();viewSop(row.dataset.sopId);}},{signal:moduleSignal});
     }
     function formatDate(dateString) {
         if (!dateString) return "";
@@ -1250,6 +1244,15 @@ async function initializeSopPage() {
             }
             return;
         }
-    });
+    }, { signal: moduleSignal });
 
 }
+
+
+window.PMPModules = window.PMPModules || {};
+window.PMPModules.SOP = {
+    async mount() { await initializeSopPage(); },
+    async unmount() {
+        window.dispatchEvent(new Event("pmp:sop-unmount"));
+    }
+};
