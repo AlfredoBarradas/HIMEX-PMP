@@ -124,14 +124,29 @@
         }
     }
 
-    function replacePageOverlays(sourceDocument, sourceContent) {
+    function getOverlayContainer() {
         let target = document.getElementById("page-overlays");
         if (!target) {
             target = document.createElement("div");
             target.id = "page-overlays";
             document.body.appendChild(target);
         }
+        return target;
+    }
 
+    function moveInitialOverlays() {
+        const content = document.getElementById("page-content");
+        const target = getOverlayContainer();
+        const candidates = [...document.body.querySelectorAll(".modal, [id$='-modal']")]
+            .filter(element => !content?.contains(element) && !target.contains(element));
+        const topLevel = candidates.filter(element =>
+            !candidates.some(other => other !== element && other.contains(element))
+        );
+        topLevel.forEach(element => target.appendChild(element));
+    }
+
+    function replacePageOverlays(sourceDocument, sourceContent) {
+        const target = getOverlayContainer();
         target.replaceChildren();
         const candidates = [...sourceDocument.body.querySelectorAll(".modal, [id$='-modal']")]
             .filter(element => !sourceContent.contains(element));
@@ -234,6 +249,7 @@
         if (!await authorize(route, pathname)) return;
 
         try {
+            moveInitialOverlays();
             await initializeShell();
             setRouteStyles(route.styles);
             await loadScripts(route.scripts);
