@@ -41,7 +41,7 @@ async function authorizePage(config = {}) {
             return { allowed: false, redirect: "/" };
         }
         const admin = isAdmin();
-        const adminOnly = Boolean(config.adminOnly) || path.startsWith("/settings/users") || path.startsWith("/settings/roles");
+        const adminOnly = Boolean(config.adminOnly) || document.body.dataset.adminOnly === "true" || path.startsWith("/settings/users") || path.startsWith("/settings/roles");
         if (adminOnly && !admin) return { allowed: false, redirect: "/" };
         const pageName = config.page || document.body.dataset.page;
         const requiredModules = getRequiredModules(config);
@@ -68,9 +68,3 @@ async function requireAuth() {
     return result.authData;
 }
 
-document.addEventListener("DOMContentLoaded", async () => {
-    if (document.body.dataset.authDefer === "true") return;
-    const result = await authorizePage();
-    if (!result.allowed) { redirectTo(result.redirect); return; }
-    document.body.classList.remove("auth-pending");
-});
