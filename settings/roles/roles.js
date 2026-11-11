@@ -3,7 +3,10 @@
     let editingRoleId = null;
 
 
-    async function initializeData() {\n        await loadRoles();\n        await loadPermissions();\n    }
+    async function initializeData() {
+        await loadRoles();
+        await loadPermissions();
+    }
 
 
     async function loadRoles() {
@@ -505,8 +508,10 @@
 
 
 window.PMPModules = window.PMPModules || {};
-window.PMPModules.Roles = {\n    async mount() { await initializeData(); initializeEvents(); },
-    async unmount() {
-        // The module view is removed by the router. Rebinding occurs only on the next mount.
-    }
+window.PMPModules.Roles = {
+    async mount() {
+        await initializeData();
+        initializeEvents();
+    },
+    async unmount() {}
 };
