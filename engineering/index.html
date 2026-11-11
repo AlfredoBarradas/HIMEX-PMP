@@ -25,7 +25,7 @@ class="auth-pending">
         <div id="sidebar-container"></div>
 
         <!-- Main content -->
-        <main class="main-content">
+        <main class="main-content"><header id="topbar-container"></header><div id="page-content">
             <!-- Header -->
             <header id="topbar-container"></header>
 
@@ -48,18 +48,17 @@ class="auth-pending">
                     <a href="#" class="dashboard-card"><h3>Procedures</h3><p>pending</p></a>
                 </div>
             </section>
-        </main>
+        </div></main>
     </div>
 
     <!-- JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/js/supabase.js"></script>
-    <script src="/js/auth.js"></script>
-
-    <script src="/components/sidebar/sidebar.js"></script>
-    <script src="/components/topbar/topbar.js"></script>
-
-
+<script src="/js/supabase.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/components/sidebar/sidebar.js"></script>
+<script src="/components/topbar/topbar.js"></script>
+<script src="/js/page-registry.js"></script>
+<script src="/js/router.js"></script>
 </body>
 
 </html>
