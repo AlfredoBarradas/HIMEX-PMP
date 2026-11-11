@@ -2,6 +2,10 @@
 let workflowController = null;
 
 async function mountSopWorkflow() {
+    workflowController?.abort();
+    workflowController = new AbortController();
+    const signal = workflowController.signal;
+
     const validationBody = document.getElementById("sop-validation-body");
     const approvalBody = document.getElementById("sop-approval-body");
     const workflowBody = document.getElementById("sop-workflow-body");
@@ -98,10 +102,7 @@ async function mountSopWorkflow() {
         message(approvalBody,7,"Unable to load approval tasks. See browser console for details.");
         message(workflowBody,6,"Unable to load SOP workflow history. See browser console for details.");
     }
-    workflowController?.abort();
-    workflowController = new AbortController();
-    const signal = workflowController.signal;
-    window.addEventListener("pmp:workflow-unmount", () => workflowController?.abort(), { once: true });
+    if (signal.aborted) return;
     const bind = (target, type, handler, options = {}) => target?.addEventListener(type, handler, { ...options, signal });
     bind(document, "click", async event=>{
         const button=event.target.closest(".workflow-detail-button");
@@ -182,6 +183,9 @@ async function mountSopWorkflow() {
 window.PMPModules = window.PMPModules || {};
 window.PMPModules.SOPWorkflow = {
     async mount() { await mountSopWorkflow(); },
-    async unmount() { window.dispatchEvent(new Event("pmp:workflow-unmount")); }
+    async unmount() {
+        workflowController?.abort();
+        workflowController = null;
+    }
 };
 })();
