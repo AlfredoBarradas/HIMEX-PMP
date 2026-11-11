@@ -422,9 +422,11 @@ window.PMPModules = window.PMPModules || {};
 window.PMPModules.Users = {
     async mount() {
         usersModuleController?.abort();
-        usersModuleController = new AbortController();
+        const controller = new AbortController();
+        usersModuleController = controller;
         await initializeData();
-        initializeEvents(usersModuleController.signal);
+        if (controller.signal.aborted) return;
+        initializeEvents(controller.signal);
     },
     async unmount() {
         usersModuleController?.abort();
