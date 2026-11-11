@@ -1,4 +1,5 @@
-    let users = [];
+(() => {
+let users = [];
     let editingUserId = null;
     let usersModuleController = null;
     async function initializeData() {
@@ -430,3 +431,4 @@ window.PMPModules.Users = {
         usersModuleController = null;
     }
 };
+})();
