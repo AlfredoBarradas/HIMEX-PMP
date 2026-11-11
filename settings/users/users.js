@@ -1,19 +1,8 @@
-(async () => {
     let users = [];
     let editingUserId = null;
     async function initializePage() {
-        const authData = await requireAuth();
-        if (!authData?.user) {
-            window.location.replace("/auth/");
-            return;
-        }
-        if (!isAdmin()) {
-            window.location.replace("/");
-            return;
-        }
         await Promise.all([loadUsers(), loadRoles()]);
         initializeEvents();
-        document.body.classList.remove("auth-pending");
     }
     async function loadUsers() {
         const tableBody = document.getElementById("users-table-body");
@@ -426,5 +415,15 @@
         });
     }
 
-    await initializePage();
-})();
+
+
+window.PMPModules = window.PMPModules || {};
+window.PMPModules.Users = {
+    async mount() {
+        await Promise.all([loadUsers(), loadRoles()]);
+        initializeEvents();
+    },
+    async unmount() {
+        // The module view is removed by the router. Rebinding occurs only on the next mount.
+    }
+};
