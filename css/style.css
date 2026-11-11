@@ -190,10 +190,10 @@ body {
 
 
 body.auth-pending .app {
-    visibility: hidden;
+    visibility: visible;
 }
 body.auth-pending::before {
-    content: "Verifying access...";
+    content: "Loading...";
     position: fixed;
     inset: 0;
     z-index: 99999;

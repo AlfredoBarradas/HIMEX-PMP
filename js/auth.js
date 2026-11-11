@@ -1,21 +1,24 @@
 const PAGE_MODULES = {
-    "Production": ["Production"],
-    "Efficiency": ["Efficiency"],
-    "Losstime": ["Losstime"],
-    "Scrap": ["Scrap"],
-    
-
-    "Engineering": ["SOP", "Layout", "TI", "MDR"],
-    
-    "New Models": ["New Models", "PFMEA"],
+    "engPage": ["Layout", "MDR", "SOP", "TI"],
+    "partsPage": ["SOP"],
+    "drawsPage": ["SOP"],
+    "sopPage": ["SOP"],
+    "layoutPage": ["Layout"],
+    "mdrPage": ["MDR"],
+    "techPage": ["TI"],
+    "flowPage": ["SOP"],
+    "procPage": ["SOP"],
 };
+
 let authGuardPromise = null;
+
 function getRequiredModules() {
     const configuredModules = document.body.dataset.requiredModules;
     if (configuredModules) {
         return configuredModules.split(",").map(module => module.trim()).filter(Boolean);
     }
     return PAGE_MODULES[document.body.dataset.page] ?? [];
+
 }
 function redirectTo(path) {
     window.location.replace(path);
@@ -29,11 +32,8 @@ async function requireAuth() {
         try {
             // 1. Initialize authentication
             const authData = await initializeSupabaseAuth();
-
             const path = window.location.pathname;
-            const isChangePasswordPage = path.startsWith(
-                "/auth/change-password"
-            );
+            const isChangePasswordPage = path.startsWith("/auth/change-password");
 
             // 2. Require an authenticated user
             if (!authData?.user) {
@@ -42,39 +42,24 @@ async function requireAuth() {
 
             // 3. Validate profile and role
             if (!authData.profile || !authData.roleData) {
-                console.error(
-                    "Authenticated user has no valid profile or role."
-                );
-
+                console.error("Authenticated user has no valid profile or role.");
                 await signOutUser();
                 return redirectTo("/auth/");
             }
 
             // 4. Validate account and role status
-            if (
-                !authData.profile.active ||
-                !authData.roleData.active
-            ) {
-                console.error(
-                    "User account or role is inactive."
-                );
-
+            if (!authData.profile.active || !authData.roleData.active) {
+                console.error("User account or role is inactive.");
                 await signOutUser();
                 return redirectTo("/auth/");
             }
 
             // 5. Enforce password change
-            if (
-                authData.profile.must_change_password &&
-                !isChangePasswordPage
-            ) {
+            if (authData.profile.must_change_password && !isChangePasswordPage) {
                 return redirectTo("/auth/change-password/");
             }
 
-            if (
-                !authData.profile.must_change_password &&
-                isChangePasswordPage
-            ) {
+            if (!authData.profile.must_change_password && isChangePasswordPage) {
                 return redirectTo("/");
             }
 
@@ -101,14 +86,11 @@ async function requireAuth() {
                 !admin &&
                 !adminOnly &&
                 !isChangePasswordPage &&
+                pageName &&
                 pageName !== "Home" &&
                 !requiredModules.length
             ) {
-                console.error(
-                    "No access policy configured for page:",
-                    pageName
-                );
-
+                console.error("No access policy configured for page:", pageName);
                 return redirectTo("/");
             }
 
@@ -118,6 +100,7 @@ async function requireAuth() {
                 !admin &&
                 !adminOnly &&
                 !isChangePasswordPage &&
+                pageName &&
                 pageName !== "Home" &&
                 requiredModules.length
             ) {
@@ -131,16 +114,11 @@ async function requireAuth() {
                     return redirectTo("/");
                 }
             }
-
             // 11. Authentication and access validation successful
             return authData;
 
         } catch (error) {
-            console.error(
-                "Access validation failed:",
-                error
-            );
-
+            console.error("Access validation failed:", error);
             return redirectTo("/auth/");
         }
     })();
