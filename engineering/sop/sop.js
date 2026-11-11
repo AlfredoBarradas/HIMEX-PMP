@@ -129,10 +129,11 @@ async function initializeSopPage() {
     const moduleAbortController = new AbortController();
     const moduleSignal = moduleAbortController.signal;
     window.addEventListener("pmp:sop-unmount", () => moduleAbortController.abort(), { once: true });
-    window.addEventListener("focus", () => {
+    const bind = (target, type, handler, options = {}) => target?.addEventListener(type, handler, { ...options, signal: moduleSignal });
+    bind(window, "focus", () => {
         if (!document.getElementById("sop-control")?.classList.contains("hidden")) refreshWorkflowCounts();
-    }, { signal: moduleSignal });
-    document.addEventListener("visibilitychange", () => {
+    });
+    bind(document, "visibilitychange", () => {
         if (document.visibilityState === "visible" && !document.getElementById("sop-control")?.classList.contains("hidden")) refreshWorkflowCounts();
     }, { signal: moduleSignal });
     function setFormEditable(editable) {
@@ -756,7 +757,7 @@ async function initializeSopPage() {
     function escapeHtml(value) {
         return String(value ?? "").replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
     }
-    document.addEventListener("click", async event => {
+    bind(document, "click", async event => {
         const workflowRow = event.target.closest("#sop-workflow-body .workflow-clickable-row");
         if (workflowRow && !event.target.closest("button, a, input, select, textarea, label")) { viewSop(workflowRow.dataset.sopId); return; }
         const taskRow = event.target.closest("#sop-validation-body .workflow-clickable-row, #sop-approval-body .workflow-clickable-row");
@@ -904,8 +905,8 @@ async function initializeSopPage() {
         ["filter-area","filter-process","filter-series","filter-model","filter-part-name","filter-created-by","filter-status"].forEach(id=>document.getElementById(id)?.addEventListener("change",applySopCatalogFilters));
         document.getElementById("clear-sop-filters")?.addEventListener("click",()=>{const search=document.getElementById("sop-search-box");if(search)search.value="";["filter-area","filter-process","filter-series","filter-model","filter-part-name","filter-created-by","filter-status"].forEach(id=>{const select=document.getElementById(id);if(select)select.value="";});applySopCatalogFilters();});
         document.querySelectorAll("[data-table-search]").forEach(input=>input.addEventListener("input",()=>{const body=document.getElementById(input.dataset.tableSearch);const query=input.value.trim().toLowerCase();body?.querySelectorAll("tr").forEach(row=>row.hidden=Boolean(query)&&!row.textContent.toLowerCase().includes(query));}));
-        document.addEventListener("click",event=>{const row=event.target.closest("#sop-catalog-body .catalog-clickable-row");if(row&&!event.target.closest("button,a,input,select,textarea,label"))viewSop(row.dataset.sopId);},{signal:moduleSignal});
-        document.addEventListener("keydown",event=>{const row=event.target.closest("#sop-catalog-body .catalog-clickable-row");if(row&&(event.key==="Enter"||event.key===" ")){event.preventDefault();viewSop(row.dataset.sopId);}},{signal:moduleSignal});
+        bind(document,"click",event=>{const row=event.target.closest("#sop-catalog-body .catalog-clickable-row");if(row&&!event.target.closest("button,a,input,select,textarea,label"))viewSop(row.dataset.sopId);});
+        bind(document,"keydown",event=>{const row=event.target.closest("#sop-catalog-body .catalog-clickable-row");if(row&&(event.key==="Enter"||event.key===" ")){event.preventDefault();viewSop(row.dataset.sopId);}});
     }
     function formatDate(dateString) {
         if (!dateString) return "";
@@ -931,10 +932,10 @@ async function initializeSopPage() {
     function closeSopModal() {
         document.getElementById("sop-modal").classList.add("hidden");
     }
-    document.getElementById("sop-modal-close").addEventListener("click", closeSopModal);
-    document.getElementById("sop-modal-close-footer").addEventListener("click", closeSopModal);
-    document.querySelector(".sop-modal-overlay").addEventListener("click", closeSopModal);
-    document.addEventListener("keydown", event => {
+    bind(document.getElementById("sop-modal-close"), "click", closeSopModal);
+    bind(document.getElementById("sop-modal-close-footer"), "click", closeSopModal);
+    bind(document.querySelector("#sop-modal .sop-modal-overlay"), "click", closeSopModal);
+    bind(document, "keydown", event => {
         if (event.key === "Escape") {
             closeSopModal();
         }
@@ -1252,7 +1253,5 @@ async function initializeSopPage() {
 window.PMPModules = window.PMPModules || {};
 window.PMPModules.SOP = {
     async mount() { await initializeSopPage(); },
-    async unmount() {
-        window.dispatchEvent(new Event("pmp:sop-unmount"));
-    }
+    async unmount() { window.dispatchEvent(new Event("pmp:sop-unmount")); }
 };
