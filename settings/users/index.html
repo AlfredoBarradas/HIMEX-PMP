@@ -17,14 +17,11 @@
 <body 
 data-page="Users" 
 data-admin-only="true" 
-data-auth-defer="true" 
 class="auth-pending">
 
     <div class="app">
         <div id="sidebar-container"></div>
-        <main class="main-content">
-            <header id="topbar-container"></header>
-            <section class="content">
+        <main class="main-content"><header id="topbar-container"></header><div id="page-content"><section class="content">
                 <div class="page-header">
                     <div>
                         <h1>Users</h1>
@@ -165,7 +162,7 @@ class="auth-pending">
                 </section>
             </div>
 
-        </main>
+        </div></main>
 
         <div id="reset-password-modal" class="modal hidden">
             <div class="modal-overlay" data-action="close-reset-password"></div>
@@ -196,10 +193,11 @@ class="auth-pending">
 
     </div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/js/supabase.js"></script>
-    <script src="/js/auth.js"></script>
-    <script src="/components/sidebar/sidebar.js"></script>
-    <script src="/components/topbar/topbar.js"></script>
-    <script src="/settings/users/users.js"></script>
+<script src="/js/supabase.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/components/sidebar/sidebar.js"></script>
+<script src="/components/topbar/topbar.js"></script>
+<script src="/js/page-registry.js"></script>
+<script src="/js/router.js"></script>
 </body>
 </html>
