@@ -1,3 +1,4 @@
+(() => {
 async function initializeSopPage() {
     const sections = document.querySelectorAll(".sop-view");
     const navigationButtons = document.querySelectorAll("[data-section]");
@@ -1255,3 +1256,4 @@ window.PMPModules.SOP = {
     async mount() { await initializeSopPage(); },
     async unmount() { window.dispatchEvent(new Event("pmp:sop-unmount")); }
 };
+})();
