@@ -1,9 +1,6 @@
     let users = [];
     let editingUserId = null;
-    async function initializePage() {
-        await Promise.all([loadUsers(), loadRoles()]);
-        initializeEvents();
-    }
+    async function initializeData() {\n        await Promise.all([loadUsers(), loadRoles()]);\n    }
     async function loadUsers() {
         const tableBody = document.getElementById("users-table-body");
         if (!tableBody) return;
@@ -418,11 +415,7 @@
 
 
 window.PMPModules = window.PMPModules || {};
-window.PMPModules.Users = {
-    async mount() {
-        await Promise.all([loadUsers(), loadRoles()]);
-        initializeEvents();
-    },
+window.PMPModules.Users = {\n    async mount() { await initializeData(); initializeEvents(); },
     async unmount() {
         // The module view is removed by the router. Rebinding occurs only on the next mount.
     }
