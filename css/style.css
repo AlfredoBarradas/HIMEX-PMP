@@ -6,6 +6,7 @@
     --hisense-dark: #008c88;
     --hisense-bg: #102B36;
     --hisense-soft: #e8f8f7;
+    --app-bg:#f4f6f7;
     --ink: #123037;
     --muted: #6d8589;
     --line: #dde8e9;
@@ -19,12 +20,7 @@ html, body {
     padding: 0;
     width: 100%;
     min-height: 100%;
-    background: #000;
-}
-
-body{
-    min-height: 100vh;
-    min-height: 100dvh;
+    background: var(--app-bg);
 }
 
 * {
@@ -32,9 +28,10 @@ body{
 }
 
 body {
-    margin: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
     font-family: Arial, sans-serif;
-    background-color: #f4f6f7;
+    background-color: var(--app-bg);
     color: #263238;
 }
 /* =========================================
@@ -186,22 +183,6 @@ body {
 
 .document-status strong {
     font-size: 24px;
-}
-
-
-body.auth-pending .app {
-    visibility: visible;
-}
-body.auth-pending::before {
-    content: "Loading...";
-    position: fixed;
-    inset: 0;
-    z-index: 99999;
-    display: grid;
-    place-items: center;
-    background: #f4f6f7;
-    color: #263238;
-    font-family: Arial, sans-serif;
 }
 
 /* Shared index/table interaction */
