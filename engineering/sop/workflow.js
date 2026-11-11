@@ -1,4 +1,3 @@
-document.addEventListener("DOMContentLoaded", async () => {
     const validationBody = document.getElementById("sop-validation-body");
     const approvalBody = document.getElementById("sop-approval-body");
     const workflowBody = document.getElementById("sop-workflow-body");
@@ -95,6 +94,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         message(approvalBody,7,"Unable to load approval tasks. See browser console for details.");
         message(workflowBody,6,"Unable to load SOP workflow history. See browser console for details.");
     }
+    const controller = new AbortController();
+    const signal = controller.signal;
+    window.addEventListener("pmp:workflow-unmount", () => controller.abort(), { once: true });
     document.addEventListener("click",async event=>{
         const button=event.target.closest(".workflow-detail-button");
         if(!button)return;
@@ -144,10 +146,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             const duration=dateDuration(instance.started_at,instance.completed_at);
             detail.innerHTML="<h3>"+escapeText(doc.sop_code||"Unassigned SOP")+" · "+escapeText(revision.revision_code||"Revision unknown")+"</h3><p><strong>Workflow ID:</strong> "+escapeText(instance.id)+" · <strong>Status:</strong> "+escapeText(labelText(instance.status))+"</p><p><strong>Creator:</strong> "+escapeText(profileMap.get(String(revision.created_by||doc.created_by))||"Creator profile unavailable")+"</p><p><strong>Part No.:</strong> "+escapeText(doc.part_number||"—")+" · <strong>Operation:</strong> "+escapeText(doc.operation_name||"—")+"</p><p><strong>Submitted:</strong> "+escapeText(dateText(instance.started_at))+" · <strong>Duration:</strong> "+escapeText(duration)+(instance.completed_at?"":" (in progress)")+"</p><h4>Tasks</h4><div class='workflow-task-table'><table><thead><tr><th>Task</th><th>Status</th><th>Assigned To</th><th>Created</th><th>Completed</th></tr></thead><tbody>"+(taskHtml||"<tr><td colspan='5'>No tasks found.</td></tr>")+"</tbody></table></div><h4>History</h4><ul class='workflow-history-list'>"+(historyHtml||"<li>No history available.</li>")+"</ul>"+(canAct?"<div class='sop-revision-section'><label for='workflow-task-comment'>Review comments / correction reason</label><textarea id='workflow-task-comment' rows='3' placeholder='Enter review comments or required corrections'></textarea></div><div class='sop-modal-actions'><button type='button' class='secondary-button' id='workflow-return-to-draft' data-task-id='"+escapeText(pendingTask.id)+"'>Return to Draft</button><button type='button' class='danger-button' id='workflow-reject-task' data-task-id='"+escapeText(pendingTask.id)+"'>Reject Revision (terminal)</button><button type='button' class='primary-button' id='workflow-complete-task' data-task-id='"+escapeText(pendingTask.id)+"' data-stage='"+escapeText(permission)+"'>Complete "+escapeText(labelText(permission))+"</button></div>":pendingTask?"<p>You can view this workflow, but you cannot act on this task. Check your review permission, task assignment, and separation-of-duties requirements.</p>":"");
         }catch(error){console.error("Unable to load workflow details:",error);detail.innerHTML="<p>Unable to load workflow details. "+escapeText(error?.message||"Check access policies and the browser console.")+"</p>";}
-    });
-    document.getElementById("workflow-modal-close")?.addEventListener("click", () => document.getElementById("workflow-review-modal")?.classList.add("hidden"));
-    document.getElementById("workflow-modal-close-footer")?.addEventListener("click", () => document.getElementById("workflow-review-modal")?.classList.add("hidden"));
-    document.querySelector("#workflow-review-modal .sop-modal-overlay")?.addEventListener("click", () => document.getElementById("workflow-review-modal")?.classList.add("hidden"));
+    }, { signal });
+    document.getElementById("workflow-modal-close")?.addEventListener("click", () => document.getElementById("workflow-review-modal")?.classList.add("hidden"), { signal });
+    document.getElementById("workflow-modal-close-footer")?.addEventListener("click", () => document.getElementById("workflow-review-modal")?.classList.add("hidden"), { signal });
+    document.querySelector("#workflow-review-modal .sop-modal-overlay")?.addEventListener("click", () => document.getElementById("workflow-review-modal")?.classList.add("hidden"), { signal });
     function nodeMapLabel(nodeId){return "Task #"+nodeId;}
     document.addEventListener("click",async event=>{
         const completeButton=event.target.closest("#workflow-complete-task"), returnButton=event.target.closest("#workflow-return-to-draft"), rejectButton=event.target.closest("#workflow-reject-task");
@@ -165,7 +167,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             const {error}=await supabaseClient.rpc(rpcName,rpcArgs);
             if(error)throw error;
             alert(isReject?"Revision rejected permanently. The released revision remains unchanged.":isReturn?"Revision returned to Draft. The same revision code can be corrected and resubmitted.":"Workflow task completed successfully.");
-            document.getElementById("workflow-review-modal").classList.add("hidden");window.location.reload();
+            document.getElementById("workflow-review-modal")?.classList.add("hidden");
+            await initializeSopWorkflow();
         }catch(error){console.error("Workflow action failed:",error);alert("The workflow action failed: "+(error.message||"Check permissions and RPC parameters."));button.disabled=false;}
     });
-});
+}
