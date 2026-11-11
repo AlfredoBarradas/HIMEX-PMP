@@ -23,10 +23,7 @@ class="auth-pending">
     <div class="app">
         <div id="sidebar-container"></div>
 
-        <main class="main-content">
-            <header id="topbar-container"></header>
-
-            <section class="content">
+        <main class="main-content"><header id="topbar-container"></header><div id="page-content"><section class="content">
 
                 <section id="sop-control" class="sop-section sop-view" data-required-permission="documents.sop.create">
                     <div class="section-header">
@@ -364,7 +361,42 @@ class="auth-pending">
                 
             </section>
 
-        </main>
+        <div id="sop-modal" class="sop-modal hidden">
+        <div class="sop-modal-overlay"></div>
+        <div class="sop-modal-content">
+            <div class="sop-modal-header">
+                <div>
+                    <h2>SOP Details</h2>
+                    <p>Document information</p>
+                </div>
+                <button type="button" class="sop-modal-close" id="sop-modal-close">&times;</button>
+            </div>
+            <div class="sop-modal-body">
+                <p>SOP information will appear here.</p>
+            </div>
+            <div class="sop-modal-footer">
+                <button type="button" class="secondary-button" id="sop-modal-close-footer">Close</button>
+            </div>
+        </div>
+    </div>
+    <div id="workflow-review-modal" class="sop-modal hidden">
+        <div class="sop-modal-overlay"></div>
+        <div class="sop-modal-content">
+            <div class="sop-modal-header">
+                <div>
+                    <h2>SOP Workflow Review</h2>
+                    <p>Review and process the current workflow task</p>
+                </div>
+                <button type="button" class="sop-modal-close" id="workflow-modal-close">&times;</button>
+            </div>
+            <div class="sop-modal-body"><p>Workflow history will appear here.</p></div>
+            <div class="sop-modal-footer">
+                <button type="button" class="secondary-button" id="workflow-modal-close-footer">Close</button>
+            </div>
+        </div>
+    </div>
+
+    </div></main>
     </div>
 
     <div id="sop-modal" class="sop-modal hidden">
@@ -403,13 +435,11 @@ class="auth-pending">
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/js/supabase.js"></script>
-    <script src="/js/auth.js"></script>
-
-    <script src="/components/sidebar/sidebar.js"></script>
-    <script src="/components/topbar/topbar.js"></script>
-    <script src="sop.js"></script>
-    <script src="workflow.js"></script>
-    
+<script src="/js/supabase.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/components/sidebar/sidebar.js"></script>
+<script src="/components/topbar/topbar.js"></script>
+<script src="/js/page-registry.js"></script>
+<script src="/js/router.js"></script>
 </body>
 </html>
