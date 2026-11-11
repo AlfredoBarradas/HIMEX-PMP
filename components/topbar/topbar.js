@@ -1,56 +1,27 @@
 (() => {
-    async function loadTopbar() {
+    async function initTopbar() {
         const container = document.getElementById("topbar-container");
-
-        if (!container) {
-            return;
+        if (!container) return;
+        if (!container.querySelector(".topbar")) {
+            const response = await fetch("/components/topbar/topbar.html");
+            if (!response.ok) throw new Error("Unable to load topbar");
+            container.innerHTML = await response.text();
         }
-
-        const response = await fetch("/components/topbar/topbar.html");
-
-        if (!response.ok) {
-            console.error("Error loading topbar:", response.status);
-            return;
-        }
-
-        container.innerHTML = await response.text();
-
-        const pageName = document.body.dataset.page;
-        const pageTitle = document.getElementById("page-title");
-
-        if (pageTitle) {
-            pageTitle.textContent = document.body.dataset.pageTitle ?? pageName ?? "";
-            const pageDescription = document.body.dataset.pageDescription;
-            let descriptionElement = document.getElementById("page-description");
-            if (pageDescription) {
-                if (!descriptionElement) {
-                    descriptionElement = document.createElement("p");
-                    descriptionElement.id = "page-description";
-                    pageTitle.insertAdjacentElement("afterend", descriptionElement);
-                }
-                descriptionElement.textContent = pageDescription;
-            } else if (descriptionElement) {
-                descriptionElement.remove();
-            }
-        }
-
+        updateTopbar();
         const authData = await initializeSupabaseAuth();
-
-        if (!authData?.user || !authData.profile || !authData.roleData) {
-            return;
-        }
-
-        const userNameElement = document.getElementById("current-user-name");
-        const roleElement = document.getElementById("current-user-role");
-
-        if (userNameElement) {
-            userNameElement.textContent = authData.profile.full_name ?? "";
-        }
-
-        if (roleElement) {
-            roleElement.textContent = authData.roleData.name ?? "";
-        }
+        if (authData?.profile) document.getElementById("current-user-name").textContent = authData.profile.full_name || "";
+        if (authData?.roleData) document.getElementById("current-user-role").textContent = authData.roleData.name || "";
     }
-
-    loadTopbar();
+    function updateTopbar(config = {}) {
+        const title = document.getElementById("page-title");
+        if (title) title.textContent = config.title || document.body.dataset.pageTitle || document.body.dataset.page || "";
+        const description = config.description ?? document.body.dataset.pageDescription ?? "";
+        let node = document.getElementById("page-description");
+        if (description && title) {
+            if (!node) { node = document.createElement("p"); node.id = "page-description"; title.insertAdjacentElement("afterend", node); }
+            node.textContent = description;
+        } else node?.remove();
+    }
+    window.PMPTopbar = { init: initTopbar, update: updateTopbar };
+    document.addEventListener("DOMContentLoaded", () => initTopbar().catch(console.error));
 })();
