@@ -152,9 +152,6 @@ async function mountSopWorkflow() {
     bind(document.getElementById("workflow-modal-close"), "click", () => document.getElementById("workflow-review-modal")?.classList.add("hidden"));
     bind(document.getElementById("workflow-modal-close-footer"), "click", () => document.getElementById("workflow-review-modal")?.classList.add("hidden"));
     bind(document.querySelector("#workflow-review-modal .sop-modal-overlay"), "click", () => document.getElementById("workflow-review-modal")?.classList.add("hidden"));
-    /*?.addEventListener("click", () => document.getElementById("workflow-review-modal")?.classList.add("hidden"), { signal });
-    document.getElementById("workflow-modal-close-footer")?.addEventListener("click", () => document.getElementById("workflow-review-modal")?.classList.add("hidden"), { signal });
-    document.querySelector("#workflow-review-modal .sop-modal-overlay")?.addEventListener("click", () => document.getElementById("workflow-review-modal")?.classList.add("hidden"), { signal });
     function nodeMapLabel(nodeId){return "Task #"+nodeId;}
     bind(document, "click", async event=>{
         const completeButton=event.target.closest("#workflow-complete-task"), returnButton=event.target.closest("#workflow-return-to-draft"), rejectButton=event.target.closest("#workflow-reject-task");
@@ -176,8 +173,6 @@ async function mountSopWorkflow() {
             await mountSopWorkflow();
         }catch(error){console.error("Workflow action failed:",error);alert("The workflow action failed: "+(error.message||"Check permissions and RPC parameters."));button.disabled=false;}
     });
-}
-
 }
 
 window.PMPModules = window.PMPModules || {};
