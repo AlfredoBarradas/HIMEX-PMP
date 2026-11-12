@@ -185,6 +185,21 @@ body {
     font-size: 24px;
 }
 
+body.auth-pending .app {
+    visibility: visible;
+}
+body.auth-pending::before {
+    content: "Loading...";
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: grid;
+    place-items: center;
+    background: #f4f6f7;
+    color: #263238;
+    font-family: Arial, sans-serif;
+}
+
 /* Shared index/table interaction */
 table tbody tr {
     transition: background-color 160ms ease, box-shadow 160ms ease;

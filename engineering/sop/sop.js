@@ -26,7 +26,9 @@ async function initializeSopPage() {
 
     function setMyDraftsCount(count) {
         const counter = document.getElementById("my-drafts-count");
-        if (counter) counter.textContent = String(count);
+        if (counter) {
+            counter.textContent = String(count);
+        }
     }
     function applySopPermissions() {
         document.querySelectorAll("[data-required-permission]").forEach(element => {
@@ -36,64 +38,264 @@ async function initializeSopPage() {
     }
     async function refreshWorkflowCounts() {
         try {
-            const { data: instances, error: instanceError } = await supabaseClient.from("workflow_instances").select("id,status").in("status", ["active", "in_progress", "pending"]);
-            if (instanceError) throw instanceError;
+            
+            const { data: instances, error: instanceError } = await supabaseClient
+            .from("workflow_instances")
+            .select(`
+                id,
+                status`
+            )
+            .in("status", 
+                [
+                    "active", 
+                    "in_progress", 
+                    "pending"
+                ]
+            );
+
+            if (instanceError) {
+                throw instanceError;
+            }
+
             const active = instances || [];
             if (!active.length) {
                 document.getElementById("pending-validation-count").textContent = "0";
                 document.getElementById("pending-approval-count").textContent = "0";
                 return;
             }
+
             const ids = active.map(item => item.id);
             const [taskResult, nodeResult] = await Promise.all([
-                supabaseClient.from("workflow_tasks").select("instance_id,node_id,status").in("instance_id", ids),
-                supabaseClient.from("workflow_nodes").select("id,label,node_type,required_permission_code")
+                supabaseClient
+                .from("workflow_tasks")
+                .select(`
+                    instance_id,
+                    node_id,status
+                `)
+                .in("instance_id", ids),
+
+                supabaseClient
+                .from("workflow_nodes")
+                .select(`
+                    id,
+                    label,
+                    node_type,
+                    required_permission_code
+                `)
             ]);
-            if (taskResult.error) throw taskResult.error;
-            if (nodeResult.error) throw nodeResult.error;
+
+            if (taskResult.error) {
+                throw taskResult.error;
+            }
+            if (nodeResult.error) {
+                throw nodeResult.error;
+            }
+
             const nodeMap = new Map((nodeResult.data || []).map(node => [String(node.id), node]));
-            const pending = (taskResult.data || []).filter(task => ["pending","assigned","in_progress"].includes(String(task.status || "").toLowerCase()));
+            const pending = (taskResult.data || [])
+            .filter(task => [
+                "pending",
+                "assigned",
+                "in_progress"
+            ].includes(String(task.status || "").toLowerCase()));
+
             let validationCount = 0;
             let approvalCount = 0;
+
             pending.forEach(task => {
                 const node = nodeMap.get(String(task.node_id));
                 const permission = String(node?.required_permission_code || "").toLowerCase();
                 const stage = [node?.label,node?.node_type].filter(Boolean).join(" ").toLowerCase();
-                if (permission === "documents.sop.validate" || stage.includes("validat")) validationCount++;
-                else if (permission === "documents.sop.approve" || stage.includes("approv")) approvalCount++;
+
+                if (permission === "documents.sop.validate" || stage.includes("validat")) 
+                    validationCount++;
+                else if (permission === "documents.sop.approve" || stage.includes("approv")) 
+                    approvalCount++;
             });
+
             document.getElementById("pending-validation-count").textContent = String(validationCount);
             document.getElementById("pending-approval-count").textContent = String(approvalCount);
         } catch (error) {
             console.error("Unable to refresh SOP workflow counters:", error);
             const validationCount = document.getElementById("pending-validation-count");
             const approvalCount = document.getElementById("pending-approval-count");
-            if (validationCount) validationCount.title = "Could not refresh. See browser console.";
-            if (approvalCount) approvalCount.title = "Could not refresh. See browser console.";
+
+            if (validationCount) {
+                validationCount.title = "Could not refresh. See browser console.";
+            }
+            if (approvalCount) {
+                approvalCount.title = "Could not refresh. See browser console.";
+            }
         }
     }
-    async function loadSopWorkflow() { await loadSopTaskCatalog("sop-workflow"); }
+
+    async function loadSopWorkflow() { 
+        await loadSopTaskCatalog("sop-workflow"); 
+    }
+
     async function loadSopTaskCatalog(sectionId) {
-        const body = document.getElementById(sectionId + "-body"); if (!body) return;
+        const body = document.getElementById(sectionId + "-body"); 
+        if (!body) {
+            return;
+        }
         body.innerHTML = '<tr><td colspan="11">Loading...</td></tr>';
+
         try {
-            const { data: instances, error } = await supabaseClient.from("workflow_instances").select("id,source_document_id,source_revision_id,status,current_node_id,started_at,completed_at").in("status", ["active", "in_progress", "pending"]).order("started_at", { ascending: false }); if (error) throw error;
-            const docIds = [...new Set((instances || []).map(item => item.source_document_id).filter(Boolean))], revisionIds = [...new Set((instances || []).map(item => item.source_revision_id).filter(Boolean))];
-            const [docs,revisions,nodes] = await Promise.all([docIds.length ? supabaseClient.from("sop_documents").select("id,sop_code,part_number,operation_name,created_at,created_by,workshops(name),process_areas(name),models(name),part_names(name)").in("id",docIds) : Promise.resolve({data:[],error:null}),revisionIds.length ? supabaseClient.from("sop_revisions").select("id,revision_code,status,created_at,created_by").in("id",revisionIds) : Promise.resolve({data:[],error:null}),supabaseClient.from("workflow_nodes").select("id,label,node_type")]);
-            for (const result of [docs,revisions,nodes]) if (result.error) throw result.error;
-            const docMap = new Map((docs.data || []).map(item => [String(item.id),item])), revisionMap = new Map((revisions.data || []).map(item => [String(item.id),item])), nodeMap = new Map((nodes.data || []).map(item => [String(item.id),item]));
-            const latestBySop = new Map();
-            (instances || []).forEach(instance => { const key=String(instance.source_document_id || ""); if(key && !latestBySop.has(key)) latestBySop.set(key,instance); });
-            let rows = [...latestBySop.values()].map(instance => { const doc=docMap.get(String(instance.source_document_id))||{}, revision=revisionMap.get(String(instance.source_revision_id))||{}, node=nodeMap.get(String(instance.current_node_id))||{}, status=String(instance.status||"pending").toLowerCase(), stage=status==="completed"?"Completed":status==="rejected"?"Rejected":String(node.label||node.node_type||"In progress"); return {instance,doc,revision,node,status,stage}; });
-            const creatorIds=[...new Set(rows.map(row=>row.revision.created_by||row.doc.created_by).filter(Boolean))];
-            const profileResult=creatorIds.length?await supabaseClient.from("user_profile_names").select("id,full_name").in("id",creatorIds):{data:[],error:null};
-            if(profileResult.error)console.warn("Creator names unavailable in workflow catalog:",profileResult.error);
-            const creatorMap=new Map((profileResult.data||[]).map(profile=>[String(profile.id),profile.full_name||"Unknown"]));
-            if (sectionId === "sop-validation") rows = rows.filter(row => /validat/i.test(row.stage) && !["completed","rejected"].includes(row.status));
-            if (sectionId === "sop-approval") rows = rows.filter(row => /approv/i.test(row.stage) && !["completed","rejected"].includes(row.status));
-            if (!rows.length) { body.innerHTML = '<tr><td colspan="11">No records found.</td></tr>'; return; }
-            body.innerHTML = rows.map(({instance,doc,revision,status,stage}) => '<tr class="catalog-clickable-row workflow-clickable-row" tabindex="0" role="button" data-sop-id="' + escapeHtml(doc.id || instance.source_document_id) + '" data-instance-id="' + escapeHtml(instance.id) + '" aria-label="Review SOP ' + escapeHtml(doc.sop_code || "Unassigned") + '"><td>' + escapeHtml(formatDate(instance.started_at || doc.created_at)) + '</td><td>' + renderStatusBadge(status === "active" || status === "in_progress" ? stage : status) + '</td><td>' + escapeHtml(doc.sop_code || "Unassigned") + '</td><td>' + escapeHtml(doc.workshops?.name || "") + '</td><td>' + escapeHtml(doc.process_areas?.name || "") + '</td><td>' + escapeHtml(doc.models?.name || "") + '</td><td>' + escapeHtml(doc.part_names?.name || "") + '</td><td>' + escapeHtml(doc.part_number || "") + '</td><td>' + escapeHtml(doc.operation_name || "") + '</td><td>' + renderRevisionBadge(revision.revision_code,revision.status) + '</td><td>' + escapeHtml(creatorMap.get(String(revision.created_by || doc.created_by || "")) || "Unknown") + '</td></tr>').join("");
-        } catch (error) { console.error("Unable to load SOP task catalog:",error); body.innerHTML = '<tr><td colspan="11">Unable to load records. Check permissions and the browser console.</td></tr>'; }
+            const { data: instances, error } = await supabaseClient
+            .from("workflow_instances")
+            .select(`
+                id,
+                source_document_id,
+                source_revision_id,
+                status,
+                current_node_id,
+                started_at,
+                completed_at
+            `)
+            .in("status", [
+                "active", 
+                "in_progress", 
+                "pending"
+            ])
+            .order("started_at", { ascending: false }); 
+            
+            if (error) {
+                throw error;
+            }
+            
+            const docIds = [...new Set((instances || []).map(item => item.source_document_id).filter(Boolean))], 
+            revisionIds = [...new Set((instances || []).map(item => item.source_revision_id).filter(Boolean))];
+            
+            const [docs,revisions,nodes] = await Promise.all([docIds.length ? supabaseClient
+                .from("sop_documents")
+                .select(`
+                    id,
+                    sop_code,
+                    part_number,
+                    operation_name,
+                    created_at,
+                    created_by,
+                    workshops(name),
+                    process_areas(name),
+                    models(model),
+                    part_names(part_name)
+                `)
+                .in("id",docIds) 
+
+                : Promise.resolve({data:[],error:null}),revisionIds.length ? supabaseClient
+                .from("sop_revisions")
+                .select(`
+                    id,
+                    revision_code,
+                    status,
+                    created_at,
+                    created_by
+                `)
+                .in("id",revisionIds) 
+                
+                : Promise.resolve({data:[],error:null}),supabaseClient
+                .from("workflow_nodes")
+                .select(`
+                    id,
+                    label,
+                    node_type
+                `)
+            ]);
+            
+            for (const result of [docs,revisions,nodes]) {
+                if (result.error) {
+                    throw result.error;
+                }
+            }
+            
+            const docMap = new Map((docs.data || []).map(item => [String(item.id),item])), 
+            revisionMap = new Map((revisions.data || []).map(item => [String(item.id),item])), 
+            nodeMap = new Map((nodes.data || []).map(item => [String(item.id),item]));
+            
+            const latestBySop = new Map(); 
+            (instances || []).forEach(instance => { 
+                const key=String(instance.source_document_id || ""); 
+                if(key && !latestBySop.has(key)) {
+                    latestBySop.set(key,instance); 
+                }
+            });
+            
+            let rows = [...latestBySop.values()].map(instance => { 
+                const doc = docMap.get(String(instance.source_document_id)) || {}, 
+                revision = revisionMap.get(String(instance.source_revision_id)) || {}, 
+                node = nodeMap.get(String(instance.current_node_id)) || {}, 
+                status = String(instance.status||"pending").toLowerCase(), 
+                stage = 
+                    status === "completed"? "Completed" : 
+                    status === "rejected"? "Rejected" : 
+                    String(node.label || node.node_type || "In progress"); 
+                return { 
+                    instance,
+                    doc,
+                    revision,
+                    node,
+                    status,
+                    stage
+                }; 
+            });
+            
+            const creatorIds=[...new Set(rows.map(row => row.revision.created_by || row.doc.created_by).filter(Boolean))];
+            
+            const profileResult = creatorIds.length?await supabaseClient
+            .from("user_profile_names")
+            .select(`
+                id,
+                full_name
+            `)
+            .in("id",creatorIds) : {data:[],error:null};
+            
+            if (profileResult.error) {
+                console.warn("Creator names unavailable in workflow catalog:",profileResult.error);
+            }
+            
+            const creatorMap = new Map((profileResult.data || []).map(profile => [String(profile.id), profile.full_name || "Unknown"]));
+            
+            if (sectionId === "sop-validation") {
+                rows = rows.filter(row => /validat/i.test(row.stage) && 
+                !["completed", "rejected"].includes(row.status));
+            }
+            
+            if (sectionId === "sop-approval") {
+                rows = rows.filter(row => /approv/i.test(row.stage) && 
+                !["completed","rejected"].includes(row.status));
+            }
+            
+            if (!rows.length) { 
+                body.innerHTML = '<tr><td colspan="11">No records found.</td></tr>'; 
+                return; 
+            }
+            
+            body.innerHTML = rows.map(({
+                instance,
+                doc,
+                revision,
+                status,
+                stage
+            }) => 
+                '<tr class="catalog-clickable-row workflow-clickable-row" tabindex="0" role="button" data-sop-id="' + 
+                escapeHtml(doc.id || instance.source_document_id) + '" data-instance-id="' + 
+                escapeHtml(instance.id) + '" aria-label="Review SOP ' + 
+                escapeHtml(doc.sop_code || "Unassigned") + '"><td>' + 
+                escapeHtml(formatDate(instance.started_at || doc.created_at)) + '</td><td>' + 
+                renderStatusBadge(status === "active" || status === "in_progress" ? stage : status) + '</td><td>' + 
+                escapeHtml(doc.sop_code || "Unassigned") + '</td><td>' + 
+                escapeHtml(doc.workshops?.name || "") + '</td><td>' + 
+                escapeHtml(doc.process_areas?.name || "") + '</td><td>' + 
+                escapeHtml(doc.models?.model || "") + '</td><td>' + 
+                escapeHtml(doc.part_names?.part_name || "") + '</td><td>' + 
+                escapeHtml(doc.part_number || "") + '</td><td>' + 
+                escapeHtml(doc.operation_name || "") + '</td><td>' + 
+                renderRevisionBadge(revision.revision_code, revision.status) + '</td><td>' + 
+                escapeHtml(creatorMap.get(String(revision.created_by || doc.created_by || "")) || "Unknown") + '</td></tr>').join("");
+
+        } catch (error) { 
+            console.error("Unable to load SOP task catalog:",error); 
+            body.innerHTML = '<tr><td colspan="11">Unable to load records. Check permissions and the browser console.</td></tr>'; }
     }
     function showSection(sectionId) {
         const targetSection = document.getElementById(sectionId);
@@ -373,7 +575,10 @@ async function initializeSopPage() {
         if (!seriesId) return;
         const { data, error } = await supabaseClient
             .from("models")
-            .select("id, name")
+            .select(`
+                id, 
+                model
+            `)
             .eq("model_series_id", seriesId)
             .eq("active", true)
             .order("name");
@@ -396,7 +601,11 @@ async function initializeSopPage() {
         seriesSelect.disabled = true;
         const { data, error } = await supabaseClient
             .from("model_series")
-            .select("id, name, code")
+            .select(`
+                id, 
+                series,
+                letter
+            `)
             .eq("active", true)
             .order("name");
         if (error) {
