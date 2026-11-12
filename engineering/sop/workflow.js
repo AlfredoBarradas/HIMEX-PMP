@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     const escapeText = value => String(value ?? "").replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
-    const dateText = value => value ? new Date(value).toLocaleString([], {dateStyle:"medium",timeStyle:"short"}) : "—";
+    const dateText = value => value ? new Date(value).toLocaleString([], {dateStyle:"medium", timeStyle:"short"}) : "—";
     const labelText = value => ({
         in_progress: "In Progress",
         active: "In Progress",
@@ -32,7 +32,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         sop_status_changed: "SOP status changed"
     }[
         String(value || "").toLowerCase()] || 
-        String(value || "").replaceAll("_"," ").replaceAll("-"," ").replace(/\b\w/g, char=>char.toUpperCase())
+        String(value || "").replaceAll("_"," ").replaceAll("-"," ").replace(/\b\w/g, char => char.toUpperCase())
     );
 
     const dateDuration = (start,end) => {
@@ -46,8 +46,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         return days ? days+"d "+hours+"h" : hours ? hours+"h "+mins+"m" : mins+"m";
     };
     const message = (body, count, text) => { 
-        body.innerHTML = '<tr><td colspan="'+count+'">'+
-        escapeText(text)+'</td></tr>'; 
+        body.innerHTML = 
+            `<tr>
+                <td colspan="${count}">
+                    ${escapeText(text)}
+                </td>
+            </tr>
+        `; 
     };
     const pendingStatuses = [
         "pending",
@@ -89,7 +94,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 .order(
                     "created_at",
                     {ascending:true}
-                ) : Promise.resolve({data: [], error:null}),
+                ): Promise.resolve({data: [], error:null}),
 
             supabaseClient
                 .from("workflow_nodes")
@@ -125,10 +130,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                     model,
                     part_name
                 `)
-                .in(
-                    "id",
-                    docIds
-                ) : Promise.resolve({data: [], error: null}),
+                .in("id", docIds)
+                : Promise.resolve({data: [], error: null}),
 
             revisionIds.length ? supabaseClient
                 .from("sop_revisions")
@@ -142,10 +145,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                     released_at,
                     description
                 `)
-                .in(
-                    "id",
-                    revisionIds
-                ) : Promise.resolve({data: [], error: null}),
+                .in("id", revisionIds)
+                : Promise.resolve({data: [], error: null}),
 
             tasks.length ? supabaseClient
                 .from("workflow_task_assignees")
@@ -153,10 +154,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                     task_id,
                     user_id
                 `)
-                .in(
-                    "task_id",
-                    tasks.map(row => row.id)
-                ) : Promise.resolve({data: [], error: null})
+                .in("task_id", tasks.map(row => row.id))
+                : Promise.resolve({data: [], error: null})
         ]);
         if (docResult.error) {
             throw docResult.error;
@@ -172,9 +171,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             revisions = revisionResult.data || [], 
             assignments = assignmentResult.data || [];
         
-        const 
-            modelIds = [...new Set(docs.map(row => row.model_id).filter(Boolean))], 
-            partNameIds = [...new Set(docs.map(row => row.part_name_id).filter(Boolean))];
+        const modelIds = [...new Set(docs.map(row => row.model_id).filter(Boolean))];
+        const partNameIds = [...new Set(docs.map(row => row.part_name_id).filter(Boolean))];
 
         const [modelsResult, partNamesResult] = await Promise.all([
             modelIds.length ? supabaseClient
@@ -183,10 +181,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                     id,
                     name
                 `)
-                .in(
-                    "id",
-                    modelIds
-                ) : Promise.resolve({data: [], error: null}),
+                .in("id", modelIds)
+                : Promise.resolve({data: [], error: null}),
 
             partNameIds.length ? supabaseClient
                 .from("part_names")
@@ -194,10 +190,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                     id,
                     name
                 `)
-                .in(
-                    "id",
-                    partNameIds
-                ) : Promise.resolve({data: [], error: null})
+                .in("id", partNameIds)
+                : Promise.resolve({data: [], error: null})
         ]);
         if (modelsResult.error) {
             throw modelsResult.error;
@@ -205,10 +199,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (partNamesResult.error) {
             throw partNamesResult.error;
         }
-        const 
-            docMap = new Map(docs.map(row => [String(row.id), row])), 
-            revisionMap=new Map(revisions.map(row => [String(row.id), row]));
-        
+
+        const docMap = new Map(docs.map(row => [String(row.id), row]));
+        const revisionMap = new Map(revisions.map(row => [String(row.id), row]));
         const modelMap = new Map((modelsResult.data || []).map(row => [String(row.id), row.name]));
         const partNameMap = new Map((partNamesResult.data||[]).map(row => [String(row.id), row.name]));
         const peopleResult = ids.length ? await supabaseClient.rpc("get_sop_workflow_people", {p_instance_ids: ids}) : {data: [], error:null};
@@ -225,9 +218,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             return nodeMap.get(String(task?.node_id ?? instance.current_node_id));};
 
         const stageFor = instance => {
-            const 
-                node = nodeFor(instance), 
-                revision = revisionMap.get(String(instance.source_revision_id));
+            const node = nodeFor(instance);
+            const revision = revisionMap.get(String(instance.source_revision_id));
             
             const permission = String(node?.required_permission_code || "").toLowerCase();
 
@@ -482,7 +474,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const detailObj = item.details || {};
                 const actor = profileMap.get(String(item.actor_id)) || "User";
                 const reason = detailObj.reason || detailObj.result?.comment || detailObj.comment;
-                
+
                 return `<li>
                             <strong>` + escapeText(labelText(item.event_type))+"</strong> · " +
                             escapeText(dateText(item.created_at))+" · "+
