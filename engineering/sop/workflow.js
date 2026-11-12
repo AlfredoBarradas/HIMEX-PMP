@@ -478,12 +478,11 @@ document.addEventListener("DOMContentLoaded", async () => {
                         </tr>`;
             }).join("");
 
-            const historyHtml =( history||[]).map(item => {
-                const 
-                    detailObj = item.details || {}, 
-                    actor = profileMap.get(String(item.actor_id)) || "User";
-                
+            const historyHtml = (history || []).map(item => {
+                const detailObj = item.details || {};
+                const actor = profileMap.get(String(item.actor_id)) || "User";
                 const reason = detailObj.reason || detailObj.result?.comment || detailObj.comment;
+                
                 return `<li>
                             <strong>` + escapeText(labelText(item.event_type))+"</strong> · " +
                             escapeText(dateText(item.created_at))+" · "+
@@ -552,20 +551,21 @@ document.addEventListener("DOMContentLoaded", async () => {
         return "Task #"+nodeId;
     }
 
-    document.addEventListener("click",async event => {
-        const completeButton=event.target.closest("#workflow-complete-task"), returnButton=event.target.closest("#workflow-return-to-draft"), rejectButton=event.target.closest("#workflow-reject-task");
+    document.addEventListener("click", async event => {
+        const completeButton = event.target.closest("#workflow-complete-task");
+        const returnButton = event.target.closest("#workflow-return-to-draft"); 
+        const rejectButton = event.target.closest("#workflow-reject-task");
+
         if (!completeButton && !returnButton && !rejectButton){
             return;
         }
-        
-        const 
-            button = completeButton || returnButton || rejectButton, 
-            taskId = Number(button.dataset.taskId), 
-            comment = document.getElementById("workflow-task-comment")?.value?.trim() || "";
-        
-        const 
-            isReject = Boolean(rejectButton), 
-            isReturn=Boolean(returnButton);
+
+        const button = completeButton || returnButton || rejectButton;
+        const taskId = Number(button.dataset.taskId);
+        const comment = document.getElementById("workflow-task-comment")?.value?.trim() || "";
+
+        const isReject = Boolean(rejectButton);
+        const isReturn=Boolean(returnButton);
 
         if ((isReject || isReturn) && !comment){
             alert(isReject?"Enter a reason before rejecting this revision.": "Enter the correction request before returning this revision to Draft.");
@@ -600,7 +600,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 p_result: {comment}
             };
 
-            const {error}=await supabaseClient.rpc(rpcName,rpcArgs);
+            const {error} = await supabaseClient.rpc(rpcName, rpcArgs);
             if (error){
                 throw error;
             }
