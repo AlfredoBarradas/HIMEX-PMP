@@ -166,7 +166,7 @@ async function initializeSopPage() {
             const docIds = [...new Set((instances || []).map(item => item.source_document_id).filter(Boolean))], 
             revisionIds = [...new Set((instances || []).map(item => item.source_revision_id).filter(Boolean))];
             
-            const [docs,revisions,nodes] = await Promise.all([docIds.length ? supabaseClient
+            const [docs, revisions, nodes] = await Promise.all([docIds.length ? supabaseClient
                 .from("sop_documents")
                 .select(`
                     id,
@@ -180,7 +180,7 @@ async function initializeSopPage() {
                     models(model),
                     part_names(part_name)
                 `)
-                .in("id",docIds) 
+                .in("id", docIds) 
 
                 : Promise.resolve({data:[],error:null}),revisionIds.length ? supabaseClient
                 .from("sop_revisions")
@@ -202,7 +202,7 @@ async function initializeSopPage() {
                 `)
             ]);
             
-            for (const result of [docs,revisions,nodes]) {
+            for (const result of [docs, revisions, nodes]) {
                 if (result.error) {
                     throw result.error;
                 }
@@ -214,7 +214,7 @@ async function initializeSopPage() {
             
             const latestBySop = new Map(); 
             (instances || []).forEach(instance => { 
-                const key=String(instance.source_document_id || ""); 
+                const key = String(instance.source_document_id || ""); 
                 if(key && !latestBySop.has(key)) {
                     latestBySop.set(key,instance); 
                 }
@@ -299,7 +299,9 @@ async function initializeSopPage() {
     }
     function showSection(sectionId) {
         const targetSection = document.getElementById(sectionId);
-        if (!targetSection || !targetSection.classList.contains("sop-view")) return;
+        if (!targetSection || !targetSection.classList.contains("sop-view")) {
+            return;
+        }
         const canView = hasPermission("documents.sop.view");
         const canCreate = hasPermission("documents.sop.create");
         if (!canView) {
@@ -307,8 +309,18 @@ async function initializeSopPage() {
             return;
         }
         if (!canCreate) sectionId = "sop-catalog";
-        const mainSections = ["sop-control", "sop-workflow-summary", "sop-catalog"];
-        const secondarySections = ["sop-create", "sop-drafts", "sop-validation", "sop-approval", "sop-workflow"];
+        const mainSections = [
+            "sop-control", 
+            "sop-workflow-summary", 
+            "sop-catalog"
+        ];
+        const secondarySections = [
+            "sop-create", 
+            "sop-drafts", 
+            "sop-validation", 
+            "sop-approval", 
+            "sop-workflow"
+        ];
         if (sectionId === "sop-control" && canCreate) {
             secondarySections.forEach(id => document.getElementById(id)?.classList.add("hidden"));
             applySopPermissions();
@@ -316,7 +328,9 @@ async function initializeSopPage() {
             mainSections.forEach(id => document.getElementById(id)?.classList.remove("hidden"));
             mainSections.forEach(id => {
                 const section = document.getElementById(id);
-                if (section) section.classList.toggle("hidden", id === "sop-workflow");
+                if (section) {
+                    section.classList.toggle("hidden", id === "sop-workflow");
+                }
             });
             refreshWorkflowCounts();
             loadMyDrafts();
@@ -324,24 +338,38 @@ async function initializeSopPage() {
             document.querySelectorAll(".sop-view").forEach(section => section.classList.add("hidden"));
             mainSections.forEach(id => {
                 const section = document.getElementById(id);
-                if (section) section.classList.toggle("hidden", id !== sectionId);
+                if (section) {
+                    section.classList.toggle("hidden", id !== sectionId);
+                }
             });
             secondarySections.forEach(id => {
                 const section = document.getElementById(id);
-                if (section) section.classList.toggle("hidden", id !== sectionId);
+                if (section) {
+                    section.classList.toggle("hidden", id !== sectionId);
+                }
             });
         }
-        if (sectionId === "sop-workflow") loadSopWorkflow();
-        if (sectionId === "sop-validation" || sectionId === "sop-approval") loadSopTaskCatalog(sectionId);
-        if (sectionId === "sop-catalog") loadSopCatalog();
+        if (sectionId === "sop-workflow") {
+            loadSopWorkflow();
+        }
+        if (sectionId === "sop-validation" || sectionId === "sop-approval") {
+            loadSopTaskCatalog(sectionId);
+        }
+        if (sectionId === "sop-catalog") {
+            loadSopCatalog();
+        }
         window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     window.addEventListener("focus", () => {
-        if (!document.getElementById("sop-control")?.classList.contains("hidden")) refreshWorkflowCounts();
+        if (!document.getElementById("sop-control")?.classList.contains("hidden")) {
+            refreshWorkflowCounts();
+        }
     });
     document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "visible" && !document.getElementById("sop-control")?.classList.contains("hidden")) refreshWorkflowCounts();
+        if (document.visibilityState === "visible" && !document.getElementById("sop-control")?.classList.contains("hidden")) {
+            refreshWorkflowCounts();
+        }
     });
     function setFormEditable(editable) {
         document.getElementById("sop-workshop").disabled = !editable;
@@ -353,14 +381,18 @@ async function initializeSopPage() {
         document.getElementById("sop-operation").readOnly = !editable;
     }
     function setCreateMode() {
-        if (typeof editingRevisionId !== "undefined") editingRevisionId = null;
+        if (typeof editingRevisionId !== "undefined") {
+            editingRevisionId = null;
+        }
         sopMode.value = "create";
         sopId.value = "";
         editorTitle.textContent = "Create New SOP";
         editorDescription.textContent = "Create a new standard operating process.";
         revisionInfo.classList.add("hidden");
         descriptionTitle.innerHTML = 'Description <span class="required-marker" aria-hidden="true">*</span>';
-        if (descriptionLabel) if (descriptionLabel) descriptionLabel.textContent = "Description";
+        if (descriptionLabel) {
+            descriptionLabel.textContent = "Description";
+        }
         descriptionInput.placeholder = "Describe the purpose and scope of this SOP.";
         fileInput.value = "";
         setFormEditable(true);
@@ -375,7 +407,9 @@ async function initializeSopPage() {
         revisionCurrent.value = sop.currentRevision;
         revisionNew.value = getNextRevision(sop.currentRevision);
         descriptionTitle.textContent = "Change Summary";
-        if (descriptionLabel) if (descriptionLabel) descriptionLabel.textContent = "Change Summary";
+        if (descriptionLabel) {
+            descriptionLabel.textContent = "Change Summary";
+        }
         descriptionInput.placeholder = "Describe what changed in this revision.";
         fileInput.value = "";
         document.getElementById("sop-workshop").value = sop.workshopId;
@@ -389,9 +423,13 @@ async function initializeSopPage() {
         setFormEditable(false);
     }
     function getNextRevision(revision) {
-        if (!revision) return "R01";
+        if (!revision) {
+            return "R01";
+        }
         const number = parseInt(revision.replace("R", ""), 10);
-        if (Number.isNaN(number)) return "R01";
+        if (Number.isNaN(number)) {
+            return "R01";
+        }
         return `R${String(number + 1).padStart(2, "0")}`;
     }
     function openCreateSop() {
@@ -407,12 +445,37 @@ async function initializeSopPage() {
     async function openEditSop(draftSopId) {
         try {
             const { data: authResult, error: authError } = await supabaseClient.auth.getUser();
-            if (authError) throw authError;
+            if (authError) {
+                throw authError;
+            }
             const userId = authResult?.user?.id;
-            if (!userId) throw new Error("Please sign in again.");
+            if (!userId) {
+                throw new Error("Please sign in again.");
+            }
             const { data: sop, error } = await supabaseClient
                 .from("sop_documents")
-                .select("id,workshop_id,process_area_id,model_id,part_name_id,part_number,operation_name,created_by,models(model_series_id),sop_revisions(id,revision_number,revision_code,status,description,created_by,created_at)")
+                .select(`
+                    id,
+                    workshop_id,
+                    process_area_id,
+                    model_id,
+                    part_name_id,
+                    part_number,
+                    operation_name,
+                    created_by,
+                    models(
+                        model_series_id
+                    ),
+                    sop_revisions(
+                        id,
+                        revision_number,
+                        revision_code,
+                        status,
+                        description,
+                        created_by,
+                        created_at
+                    )
+                `)
                 .eq("id", Number(draftSopId))
                 .single();
             if (error) throw error;
@@ -530,28 +593,34 @@ async function initializeSopPage() {
 
 
 
-    async function loadPartNames(workshopId) {
+    async function loadPartNames(workshopName) {
         const partNameSelect = document.getElementById("sop-part-name");
         partNameSelect.innerHTML = '<option value="">Select part name</option>';
         partNameSelect.disabled = true;
-        if (!workshopId) return;
+        if (!workshopName) {
+            return;
+        }
         const { data: relations, error: relationError } = await supabaseClient
             .from("workshop_part_names")
             .select("part_name_id")
-            .eq("workshop_id", workshopId);
+            .eq("workshop", workshopName);
         if (relationError) {
             console.error("Error loading workshop part names:", relationError);
             return;
         }
         const partNameIds = relations.map(item => item.part_name_id);
         if (partNameIds.length === 0) {
-            console.warn("No part names found for workshop:", workshopId);
+            console.warn("No part names found for workshop:", workshopName);
             partNameSelect.disabled = false;
             return;
         }
         const { data: partNames, error: partNameError } = await supabaseClient
             .from("part_names")
-            .select("id, name, code")
+            .select(`
+                id, 
+                name, 
+                code
+            `)
             .in("id", partNameIds)
             .eq("active", true)
             .order("name");
@@ -568,28 +637,30 @@ async function initializeSopPage() {
         partNameSelect.disabled = false;
     }
 
-    async function loadModels(seriesId) {
+    async function loadModels(seriesName) {
         const modelSelect = document.getElementById("sop-model");
         modelSelect.innerHTML = '<option value="">Select model</option>';
         modelSelect.disabled = true;
-        if (!seriesId) return;
+        if (!seriesName) {
+            return;
+        }
         const { data, error } = await supabaseClient
             .from("models")
             .select(`
                 id, 
-                model
+                size_model
             `)
-            .eq("model_series_id", seriesId)
+            .eq("model_series", seriesName)
             .eq("active", true)
-            .order("name");
+            .order("size_model");
         if (error) {
             console.error("Error loading models:", error);
             return;
         }
         data.forEach(model => {
             const option = document.createElement("option");
-            option.value = model.id;
-            option.textContent = model.name;
+            option.value = model.size_model;
+            option.textContent = model.size_model;
             modelSelect.appendChild(option);
         });
         modelSelect.disabled = false;
@@ -603,8 +674,8 @@ async function initializeSopPage() {
             .from("model_series")
             .select(`
                 id, 
-                series,
-                letter
+                name,
+                char
             `)
             .eq("active", true)
             .order("name");
@@ -614,36 +685,42 @@ async function initializeSopPage() {
         }
         data.forEach(series => {
             const option = document.createElement("option");
-            option.value = series.id;
+            option.value = series.name;
             option.textContent = series.name;
             seriesSelect.appendChild(option);
         });
         seriesSelect.disabled = false;
     }
 
-    async function loadProcessAreas(workshopId) {
+    async function loadProcessAreas(workshopName) {
         const processSelect = document.getElementById("sop-process");
         processSelect.innerHTML = '<option value="">Select process area</option>';
         processSelect.disabled = true;
-        if (!workshopId) return;
+        if (!workshopName) {
+            return;
+        }
         const { data: relations, error: relationError } = await supabaseClient
             .from("workshop_process_areas")
-            .select("process_area_id")
-            .eq("workshop_id", workshopId);
+            .select("process_area")
+            .eq("workshop", workshopName);
         if (relationError) {
             console.error("Error loading workshop process areas:", relationError);
             return;
         }
-        const areaIds = relations.map(item => item.process_area_id);
-        if (areaIds.length === 0) {
-            console.warn("No process areas found for workshop:", workshopId);
+        const areaName = relations.map(item => item.process_area);
+        if (areaName.length === 0) {
+            console.warn("No process areas found for workshop:", workshopName);
             processSelect.disabled = false;
             return;
         }
         const { data: areas, error: areaError } = await supabaseClient
             .from("process_areas")
-            .select("id, name, code")
-            .in("id", areaIds)
+            .select(`
+                id, 
+                name, 
+                code
+            `)
+            .in("name", areaName)
             .eq("active", true)
             .order("name");
         if (areaError) {
@@ -652,7 +729,7 @@ async function initializeSopPage() {
         }
         areas.forEach(area => {
             const option = document.createElement("option");
-            option.value = area.id;
+            option.value = area.name;
             option.textContent = `${area.name} (${area.code})`;
             processSelect.appendChild(option);
         });
@@ -663,7 +740,11 @@ async function initializeSopPage() {
         const workshopSelect = document.getElementById("sop-workshop");
         const { data, error } = await supabaseClient
             .from("workshops")
-            .select("id, name, code")
+            .select(`
+                id, 
+                name, 
+                code
+            `)
             .eq("active", true)
             .order("name");
         if (error) {
@@ -673,7 +754,7 @@ async function initializeSopPage() {
         workshopSelect.innerHTML = '<option value="">Select workshop</option>';
         data.forEach(workshop => {
             const option = document.createElement("option");
-            option.value = workshop.id;
+            option.value = workshop.name;
             option.textContent = `${workshop.name} (${workshop.code})`;
             workshopSelect.appendChild(option);
         });
@@ -700,7 +781,9 @@ async function initializeSopPage() {
             group?.classList.toggle("sop-field-invalid", empty);
             input.setAttribute("aria-invalid", empty ? "true" : "false");
             const existingError = group?.querySelector(".sop-field-error");
-            if (existingError) existingError.remove();
+            if (existingError) {
+                existingError.remove();
+            }
             if (empty) {
                 missing.push(field.label);
                 const message = document.createElement("small");
@@ -722,7 +805,9 @@ async function initializeSopPage() {
         alertBox.classList.add("hidden");
         alertBox.innerHTML = "";
         const originalPosition = sopForm.querySelector(".form-section");
-        if (originalPosition && alertBox.parentElement !== sopForm) originalPosition.insertAdjacentElement("beforebegin", alertBox);
+        if (originalPosition && alertBox.parentElement !== sopForm) {
+            originalPosition.insertAdjacentElement("beforebegin", alertBox);
+        }
         return true;
     }
     sopForm.addEventListener("input", event => {
@@ -741,14 +826,16 @@ async function initializeSopPage() {
         }
     });
     async function saveNewSop({ submitForValidation = false } = {}) {
-        const workshopId = document.getElementById("sop-workshop").value;
-        const processAreaId = document.getElementById("sop-process").value;
-        const modelId = document.getElementById("sop-model").value;
-        const partNameId = document.getElementById("sop-part-name").value;
+        const workshopName = document.getElementById("sop-workshop").value;
+        const processArea = document.getElementById("sop-process").value;
+        const modelName = document.getElementById("sop-model").value;
+        const partName = document.getElementById("sop-part-name").value;
         const partNumber = document.getElementById("sop-part-number").value.trim();
         const operationName = document.getElementById("sop-operation").value.trim();
         const description = document.getElementById("sop-description").value.trim();
-        if (!validateSopForm()) return;
+        if (!validateSopForm()) {
+            return;
+        }
         const saveButton = document.getElementById("save-sop-draft");
         const submitButton = sopForm.querySelector('button[type="submit"]');
         const originalSaveText = saveButton.textContent;
@@ -813,10 +900,10 @@ async function initializeSopPage() {
                 const { data: updateResult, error: updateError } = await supabaseClient.rpc("update_sop_draft", {
                     p_sop_id: Number(sopId.value),
                     p_revision_id: Number(editingRevisionId),
-                    p_workshop_id: Number(workshopId),
-                    p_process_area_id: Number(processAreaId),
-                    p_model_id: Number(modelId),
-                    p_part_name_id: Number(partNameId),
+                    p_workshop_id: Number(workshopName),
+                    p_process_area_id: Number(processArea),
+                    p_model_id: Number(modelName),
+                    p_part_name_id: Number(partName),
                     p_part_number: partNumber,
                     p_operation_name: operationName,
                     p_description: description
@@ -849,15 +936,17 @@ async function initializeSopPage() {
                 return;
             }
             const { data, error } = await supabaseClient.rpc("create_new_sop", {
-                p_workshop_id: Number(workshopId),
-                p_process_area_id: Number(processAreaId),
-                p_model_id: Number(modelId),
-                p_part_name_id: Number(partNameId),
+                p_workshop_name: workshopName,
+                p_process_area: processArea,
+                p_model_name: modelName,
+                p_part_name: partName,
                 p_part_number: partNumber,
                 p_operation_name: operationName,
                 p_description: description
             });
-            if (error) throw error;
+            if (error) {
+                throw error;
+            }
             const createdSop = Array.isArray(data) ? data[0] : data;
             if (!createdSop?.sop_id || !createdSop?.revision_code) {
                 console.error("Unexpected create_new_sop response:", data);
@@ -916,9 +1005,9 @@ async function initializeSopPage() {
 
     loadWorkshops();
     document.getElementById("sop-workshop").addEventListener("change", event => {
-        const workshopId = event.target.value;
-        loadProcessAreas(workshopId);
-        loadPartNames(workshopId);
+        const workshopName = event.target.value;
+        loadProcessAreas(workshopName);
+        loadPartNames(workshopName);
     });
     document.getElementById("sop-model-series").addEventListener("change", event => {
         loadModels(event.target.value);
@@ -933,11 +1022,15 @@ async function initializeSopPage() {
 
     async function loadMyDrafts() {
         const body = document.getElementById("sop-drafts-body");
-        if (!body) return;
+        if (!body) {
+            return;
+        }
         body.innerHTML = '<tr><td colspan="8">Loading your drafts...</td></tr>';
         try {
             const { data: authData, error: authError } = await supabaseClient.auth.getUser();
-            if (authError) throw authError;
+            if (authError) {
+                throw authError;
+            }
             const userId = authData?.user?.id;
             if (!userId) {
                 setMyDraftsCount(0);
@@ -946,11 +1039,34 @@ async function initializeSopPage() {
             }
             const { data: revisions, error: revisionError } = await supabaseClient
                 .from("sop_revisions")
-                .select("id,sop_id,revision_code,revision_number,status,created_at,created_by,description,sop_documents!inner(id,sop_code,part_number,operation_name,created_at,created_by,workshops(name),process_areas(name),models(name),part_names(name))")
+                .select(`
+                    id,
+                    sop_id,
+                    revision_code,
+                    revision_number,
+                    status,
+                    created_at,
+                    created_by,
+                    description,
+                    sop_documents!inner(
+                        id,
+                        sop_code,
+                        part_number,
+                        operation_name,
+                        created_at,
+                        created_by,
+                        workshops(name),
+                        process_areas(name),
+                        model(size_model),
+                        part_name(part_name)
+                    )
+                `)
                 .eq("created_by", userId)
                 .eq("status", "Draft")
                 .order("created_at", { ascending: false });
-            if (revisionError) throw revisionError;
+            if (revisionError) {
+                throw revisionError;
+            }
             const drafts = (revisions || []).map(revision => ({
                 doc: revision.sop_documents,
                 revision
@@ -1057,14 +1173,60 @@ async function initializeSopPage() {
     async function loadSopCatalog() {
         const catalogBody = document.getElementById("sop-catalog-body");
         catalogBody.innerHTML = '<tr><td colspan="12">Loading...</td></tr>';
-        const { data, error } = await supabaseClient.from("sop_documents").select(`
-            id,sop_code,part_number,operation_name,created_at,created_by,
-            workshops(name,code),process_areas(name,code),models(name,model_series(name,code)),part_names(name,code),
-            sop_revisions(revision_number,revision_code,status,created_at,created_by,released_at)
+        const { data, error } = await supabaseClient
+            .from("sop_documents")
+            .select(`
+                id,
+                sop_code,
+                part_number,
+                operation_name,
+                created_at,
+                created_by,
+                workshops(
+                    name,
+                    code
+                ),
+                process_areas(
+                    name,
+                    code
+                ),
+                models(
+                    size_model,
+                    model_series(
+                        name,
+                        char
+                    )
+                ),
+                part_names(
+                    name,
+                    code
+                ),
+                sop_revisions(
+                    revision_number,
+                    revision_code,
+                    status,
+                    created_at,
+                    created_by,
+                    released_at
+                )
         `).order("created_at", { ascending: false });
-        if (error) { console.error("Error loading SOP catalog:", error); catalogBody.innerHTML = '<tr><td colspan="12">Error loading SOP catalog.</td></tr>'; return; }
-        if (!data || data.length === 0) { catalogBody.innerHTML = '<tr><td colspan="12">No SOPs found.</td></tr>'; populateSopCatalogFilters(); return; }
-        const creatorIds = [...new Set(data.map(sop => { const revs=sop.sop_revisions||[]; const released=revs.filter(r=>String(r.status||"").toLowerCase()==="released"); const current=[...(released.length?released:revs)].sort((a,b)=>revisionNumber(b)-revisionNumber(a))[0]; return current?.created_by||sop.created_by; }).filter(Boolean))];
+
+        if (error) { 
+            console.error("Error loading SOP catalog:", error); 
+            catalogBody.innerHTML = '<tr><td colspan="12">Error loading SOP catalog.</td></tr>'; 
+            return; 
+        }
+        if (!data || data.length === 0) { 
+            catalogBody.innerHTML = '<tr><td colspan="12">No SOPs found.</td></tr>'; 
+            populateSopCatalogFilters(); 
+            return; 
+        }
+        const creatorIds = [...new Set(data.map(sop => { 
+            const revs=sop.sop_revisions || []; 
+            const released=revs.filter(r=>String(r.status||"").toLowerCase()==="released"); 
+            const current=[...(released.length?released:revs)].sort((a,b)=>revisionNumber(b)-revisionNumber(a))[0]; 
+            return current?.created_by || sop.created_by; 
+        }).filter(Boolean))];
         let profiles=[];
         if (creatorIds.length) { const profileResult=await supabaseClient.from("user_profile_names").select("id,full_name").in("id",creatorIds); if(profileResult.error) console.warn("Creator names unavailable in SOP catalog:",profileResult.error); else profiles=profileResult.data||[]; }
         renderSopCatalog(data,new Map(profiles.map(profile=>[String(profile.id),profile.full_name||"Unknown"])));
