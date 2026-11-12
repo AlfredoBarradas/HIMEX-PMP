@@ -52,10 +52,5 @@
         }
     }
 
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = "/components/topbar/topbar.css";
-    document.head.appendChild(link);
-
     loadTopbar();
 })();

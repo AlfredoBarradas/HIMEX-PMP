@@ -15,11 +15,6 @@
 
         container.innerHTML = await response.text();
 
-        const link = document.createElement("link");
-        link.rel = "stylesheet";
-        link.href = "/components/sidebar/sidebar.css";
-        document.head.appendChild(link);
-
         const authData = await initializeSupabaseAuth();
 
         if (!authData?.user) {

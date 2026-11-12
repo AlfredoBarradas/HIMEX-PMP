@@ -24,9 +24,14 @@ async function initializeSopPage() {
     const descriptionInput = document.getElementById("sop-description");
     const fileInput = document.getElementById("sop-file");
 
-    function setMyDraftsCount(count) {
-        const counter = document.getElementById("my-drafts-count");
-        if (counter) counter.textContent = String(count);
+    function escapeHtml(value) {
+        return String(value ?? "").replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+    }
+    function formatDate(dateString) {
+        if (!dateString) {
+            return "";
+        }
+        return new Date(dateString).toLocaleDateString("en-US");
     }
     function applySopPermissions() {
         document.querySelectorAll("[data-required-permission]").forEach(element => {
@@ -34,70 +39,23 @@ async function initializeSopPage() {
             element.classList.toggle("hidden", !hasPermission(permission));
         });
     }
-    async function refreshWorkflowCounts() {
-        try {
-            const { data: instances, error: instanceError } = await supabaseClient.from("workflow_instances").select("id,status").in("status", ["active", "in_progress", "pending"]);
-            if (instanceError) throw instanceError;
-            const active = instances || [];
-            if (!active.length) {
-                document.getElementById("pending-validation-count").textContent = "0";
-                document.getElementById("pending-approval-count").textContent = "0";
-                return;
-            }
-            const ids = active.map(item => item.id);
-            const [taskResult, nodeResult] = await Promise.all([
-                supabaseClient.from("workflow_tasks").select("instance_id,node_id,status").in("instance_id", ids),
-                supabaseClient.from("workflow_nodes").select("id,label,node_type,required_permission_code")
-            ]);
-            if (taskResult.error) throw taskResult.error;
-            if (nodeResult.error) throw nodeResult.error;
-            const nodeMap = new Map((nodeResult.data || []).map(node => [String(node.id), node]));
-            const pending = (taskResult.data || []).filter(task => ["pending","assigned","in_progress"].includes(String(task.status || "").toLowerCase()));
-            let validationCount = 0;
-            let approvalCount = 0;
-            pending.forEach(task => {
-                const node = nodeMap.get(String(task.node_id));
-                const permission = String(node?.required_permission_code || "").toLowerCase();
-                const stage = [node?.label,node?.node_type].filter(Boolean).join(" ").toLowerCase();
-                if (permission === "documents.sop.validate" || stage.includes("validat")) validationCount++;
-                else if (permission === "documents.sop.approve" || stage.includes("approv")) approvalCount++;
-            });
-            document.getElementById("pending-validation-count").textContent = String(validationCount);
-            document.getElementById("pending-approval-count").textContent = String(approvalCount);
-        } catch (error) {
-            console.error("Unable to refresh SOP workflow counters:", error);
-            const validationCount = document.getElementById("pending-validation-count");
-            const approvalCount = document.getElementById("pending-approval-count");
-            if (validationCount) validationCount.title = "Could not refresh. See browser console.";
-            if (approvalCount) approvalCount.title = "Could not refresh. See browser console.";
+
+    applySopPermissions();
+    if (hasPermission("documents.sop.view")) {
+        if (hasPermission("documents.sop.create")) {
+            showSection("sop-control");
+            loadSopCatalog();
+        } else {
+            showSection("sop-catalog");
+            loadSopCatalog();
         }
     }
-    async function loadSopWorkflow() { await loadSopTaskCatalog("sop-workflow"); }
-    async function loadSopTaskCatalog(sectionId) {
-        const body = document.getElementById(sectionId + "-body"); if (!body) return;
-        body.innerHTML = '<tr><td colspan="11">Loading...</td></tr>';
-        try {
-            const { data: instances, error } = await supabaseClient.from("workflow_instances").select("id,source_document_id,source_revision_id,status,current_node_id,started_at,completed_at").in("status", ["active", "in_progress", "pending"]).order("started_at", { ascending: false }); if (error) throw error;
-            const docIds = [...new Set((instances || []).map(item => item.source_document_id).filter(Boolean))], revisionIds = [...new Set((instances || []).map(item => item.source_revision_id).filter(Boolean))];
-            const [docs,revisions,nodes] = await Promise.all([docIds.length ? supabaseClient.from("sop_documents").select("id,sop_code,part_number,operation_name,created_at,created_by,workshops(name),process_areas(name),models(name),part_names(name)").in("id",docIds) : Promise.resolve({data:[],error:null}),revisionIds.length ? supabaseClient.from("sop_revisions").select("id,revision_code,status,created_at,created_by").in("id",revisionIds) : Promise.resolve({data:[],error:null}),supabaseClient.from("workflow_nodes").select("id,label,node_type")]);
-            for (const result of [docs,revisions,nodes]) if (result.error) throw result.error;
-            const docMap = new Map((docs.data || []).map(item => [String(item.id),item])), revisionMap = new Map((revisions.data || []).map(item => [String(item.id),item])), nodeMap = new Map((nodes.data || []).map(item => [String(item.id),item]));
-            const latestBySop = new Map();
-            (instances || []).forEach(instance => { const key=String(instance.source_document_id || ""); if(key && !latestBySop.has(key)) latestBySop.set(key,instance); });
-            let rows = [...latestBySop.values()].map(instance => { const doc=docMap.get(String(instance.source_document_id))||{}, revision=revisionMap.get(String(instance.source_revision_id))||{}, node=nodeMap.get(String(instance.current_node_id))||{}, status=String(instance.status||"pending").toLowerCase(), stage=status==="completed"?"Completed":status==="rejected"?"Rejected":String(node.label||node.node_type||"In progress"); return {instance,doc,revision,node,status,stage}; });
-            const creatorIds=[...new Set(rows.map(row=>row.revision.created_by||row.doc.created_by).filter(Boolean))];
-            const profileResult=creatorIds.length?await supabaseClient.from("user_profile_names").select("id,full_name").in("id",creatorIds):{data:[],error:null};
-            if(profileResult.error)console.warn("Creator names unavailable in workflow catalog:",profileResult.error);
-            const creatorMap=new Map((profileResult.data||[]).map(profile=>[String(profile.id),profile.full_name||"Unknown"]));
-            if (sectionId === "sop-validation") rows = rows.filter(row => /validat/i.test(row.stage) && !["completed","rejected"].includes(row.status));
-            if (sectionId === "sop-approval") rows = rows.filter(row => /approv/i.test(row.stage) && !["completed","rejected"].includes(row.status));
-            if (!rows.length) { body.innerHTML = '<tr><td colspan="11">No records found.</td></tr>'; return; }
-            body.innerHTML = rows.map(({instance,doc,revision,status,stage}) => '<tr class="catalog-clickable-row workflow-clickable-row" tabindex="0" role="button" data-sop-id="' + escapeHtml(doc.id || instance.source_document_id) + '" data-instance-id="' + escapeHtml(instance.id) + '" aria-label="Review SOP ' + escapeHtml(doc.sop_code || "Unassigned") + '"><td>' + escapeHtml(formatDate(instance.started_at || doc.created_at)) + '</td><td>' + renderStatusBadge(status === "active" || status === "in_progress" ? stage : status) + '</td><td>' + escapeHtml(doc.sop_code || "Unassigned") + '</td><td>' + escapeHtml(doc.workshops?.name || "") + '</td><td>' + escapeHtml(doc.process_areas?.name || "") + '</td><td>' + escapeHtml(doc.models?.name || "") + '</td><td>' + escapeHtml(doc.part_names?.name || "") + '</td><td>' + escapeHtml(doc.part_number || "") + '</td><td>' + escapeHtml(doc.operation_name || "") + '</td><td>' + renderRevisionBadge(revision.revision_code,revision.status) + '</td><td>' + escapeHtml(creatorMap.get(String(revision.created_by || doc.created_by || "")) || "Unknown") + '</td></tr>').join("");
-        } catch (error) { console.error("Unable to load SOP task catalog:",error); body.innerHTML = '<tr><td colspan="11">Unable to load records. Check permissions and the browser console.</td></tr>'; }
-    }
+
     function showSection(sectionId) {
         const targetSection = document.getElementById(sectionId);
-        if (!targetSection || !targetSection.classList.contains("sop-view")) return;
+        if (!targetSection || !targetSection.classList.contains("sop-view")) {
+            return;
+        }
         const canView = hasPermission("documents.sop.view");
         const canCreate = hasPermission("documents.sop.create");
         if (!canView) {
@@ -105,8 +63,18 @@ async function initializeSopPage() {
             return;
         }
         if (!canCreate) sectionId = "sop-catalog";
-        const mainSections = ["sop-control", "sop-workflow-summary", "sop-catalog"];
-        const secondarySections = ["sop-create", "sop-drafts", "sop-validation", "sop-approval", "sop-workflow"];
+        const mainSections = [
+            "sop-control", 
+            "sop-workflow-summary", 
+            "sop-catalog"
+        ];
+        const secondarySections = [
+            "sop-create", 
+            "sop-drafts", 
+            "sop-validation", 
+            "sop-approval", 
+            "sop-workflow"
+        ];
         if (sectionId === "sop-control" && canCreate) {
             secondarySections.forEach(id => document.getElementById(id)?.classList.add("hidden"));
             applySopPermissions();
@@ -114,7 +82,9 @@ async function initializeSopPage() {
             mainSections.forEach(id => document.getElementById(id)?.classList.remove("hidden"));
             mainSections.forEach(id => {
                 const section = document.getElementById(id);
-                if (section) section.classList.toggle("hidden", id === "sop-workflow");
+                if (section) {
+                    section.classList.toggle("hidden", id === "sop-workflow");
+                }
             });
             refreshWorkflowCounts();
             loadMyDrafts();
@@ -122,25 +92,28 @@ async function initializeSopPage() {
             document.querySelectorAll(".sop-view").forEach(section => section.classList.add("hidden"));
             mainSections.forEach(id => {
                 const section = document.getElementById(id);
-                if (section) section.classList.toggle("hidden", id !== sectionId);
+                if (section) {
+                    section.classList.toggle("hidden", id !== sectionId);
+                }
             });
             secondarySections.forEach(id => {
                 const section = document.getElementById(id);
-                if (section) section.classList.toggle("hidden", id !== sectionId);
+                if (section) {
+                    section.classList.toggle("hidden", id !== sectionId);
+                }
             });
         }
-        if (sectionId === "sop-workflow") loadSopWorkflow();
-        if (sectionId === "sop-validation" || sectionId === "sop-approval") loadSopTaskCatalog(sectionId);
-        if (sectionId === "sop-catalog") loadSopCatalog();
+        if (sectionId === "sop-workflow") {
+            loadSopWorkflow();
+        }
+        if (sectionId === "sop-validation" || sectionId === "sop-approval") {
+            loadSopTaskCatalog(sectionId);
+        }
+        if (sectionId === "sop-catalog") {
+            loadSopCatalog();
+        }
         window.scrollTo({ top: 0, behavior: "smooth" });
     }
-
-    window.addEventListener("focus", () => {
-        if (!document.getElementById("sop-control")?.classList.contains("hidden")) refreshWorkflowCounts();
-    });
-    document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "visible" && !document.getElementById("sop-control")?.classList.contains("hidden")) refreshWorkflowCounts();
-    });
     function setFormEditable(editable) {
         document.getElementById("sop-workshop").disabled = !editable;
         document.getElementById("sop-process").disabled = !editable;
@@ -150,48 +123,7 @@ async function initializeSopPage() {
         document.getElementById("sop-part-number").readOnly = !editable;
         document.getElementById("sop-operation").readOnly = !editable;
     }
-    function setCreateMode() {
-        if (typeof editingRevisionId !== "undefined") editingRevisionId = null;
-        sopMode.value = "create";
-        sopId.value = "";
-        editorTitle.textContent = "Create New SOP";
-        editorDescription.textContent = "Create a new standard operating process.";
-        revisionInfo.classList.add("hidden");
-        descriptionTitle.innerHTML = 'Description <span class="required-marker" aria-hidden="true">*</span>';
-        if (descriptionLabel) if (descriptionLabel) descriptionLabel.textContent = "Description";
-        descriptionInput.placeholder = "Describe the purpose and scope of this SOP.";
-        fileInput.value = "";
-        setFormEditable(true);
-    }
-    function setRevisionMode(sop) {
-        sopMode.value = "revision";
-        sopId.value = sop.id;
-        editorTitle.textContent = "SOP Revision";
-        editorDescription.textContent = "Create a new revision of an existing SOP.";
-        revisionInfo.classList.remove("hidden");
-        revisionSopCode.value = sop.sopCode;
-        revisionCurrent.value = sop.currentRevision;
-        revisionNew.value = getNextRevision(sop.currentRevision);
-        descriptionTitle.textContent = "Change Summary";
-        if (descriptionLabel) if (descriptionLabel) descriptionLabel.textContent = "Change Summary";
-        descriptionInput.placeholder = "Describe what changed in this revision.";
-        fileInput.value = "";
-        document.getElementById("sop-workshop").value = sop.workshopId;
-        document.getElementById("sop-process").value = sop.processAreaId;
-        document.getElementById("sop-model-series").value = sop.modelSeriesId;
-        document.getElementById("sop-model").value = sop.modelId;
-        document.getElementById("sop-part-name").value = sop.partNameId;
-        document.getElementById("sop-part-number").value = sop.partNumber || "";
-        document.getElementById("sop-operation").value = sop.operationName || "";
-        descriptionInput.value = "";
-        setFormEditable(false);
-    }
-    function getNextRevision(revision) {
-        if (!revision) return "R01";
-        const number = parseInt(revision.replace("R", ""), 10);
-        if (Number.isNaN(number)) return "R01";
-        return `R${String(number + 1).padStart(2, "0")}`;
-    }
+    
     function openCreateSop() {
         sopForm.reset();
         setCreateMode();
@@ -202,50 +134,6 @@ async function initializeSopPage() {
         showSection("sop-create");
     }
     let editingRevisionId = null;
-    async function openEditSop(draftSopId) {
-        try {
-            const { data: authResult, error: authError } = await supabaseClient.auth.getUser();
-            if (authError) throw authError;
-            const userId = authResult?.user?.id;
-            if (!userId) throw new Error("Please sign in again.");
-            const { data: sop, error } = await supabaseClient
-                .from("sop_documents")
-                .select("id,workshop_id,process_area_id,model_id,part_name_id,part_number,operation_name,created_by,models(model_series_id),sop_revisions(id,revision_number,revision_code,status,description,created_by,created_at)")
-                .eq("id", Number(draftSopId))
-                .single();
-            if (error) throw error;
-            const revision = (sop.sop_revisions || []).find(item => String(item.status || "").toLowerCase() === "draft" && String(item.created_by || sop.created_by) === String(userId));
-            if (!revision) throw new Error("This SOP has no editable Draft revision.");
-            await loadWorkshops();
-            document.getElementById("sop-workshop").value = String(sop.workshop_id);
-            await loadProcessAreas(sop.workshop_id);
-            document.getElementById("sop-process").value = String(sop.process_area_id);
-            await loadPartNames(sop.workshop_id);
-            document.getElementById("sop-part-name").value = String(sop.part_name_id);
-            await loadModelSeries();
-            const seriesId = sop.models?.model_series_id;
-            document.getElementById("sop-model-series").value = String(seriesId || "");
-            await loadModels(seriesId);
-            document.getElementById("sop-model").value = String(sop.model_id);
-            document.getElementById("sop-part-number").value = sop.part_number || "";
-            document.getElementById("sop-operation").value = sop.operation_name || "";
-            document.getElementById("sop-description").value = revision.description || "";
-            document.getElementById("sop-file").value = "";
-            sopMode.value = "edit";
-            sopId.value = String(sop.id);
-            editingRevisionId = revision.id;
-            editorTitle.textContent = "Edit Draft SOP";
-            editorDescription.textContent = "Update the details of this draft before submitting it for validation.";
-            descriptionTitle.textContent = "Description";
-            if (descriptionLabel) descriptionLabel.textContent = "Description";
-            revisionInfo.classList.add("hidden");
-            setFormEditable(true);
-            showSection("sop-create");
-        } catch (error) {
-            console.error("Error opening draft for editing:", error);
-            alert("Could not open this draft for editing. " + (error?.message || ""));
-        }
-    }
     navigationButtons.forEach(button => {
         button.addEventListener("click", () => {
             showSection(button.dataset.section);
@@ -314,42 +202,278 @@ async function initializeSopPage() {
             alert("Workflow detail will be displayed here.");
         });
     });
-    applySopPermissions();
-    if (hasPermission("documents.sop.view")) {
-        if (hasPermission("documents.sop.create")) {
-            showSection("sop-control");
-            loadSopCatalog();
-        } else {
-            showSection("sop-catalog");
-            loadSopCatalog();
+
+
+    async function viewSop(sopId) {
+        const modalBody = document.querySelector(".sop-modal-body");
+        modalBody.innerHTML = "<p>Loading...</p>";
+        openSopModal();
+        const { data, error } = await supabaseClient
+            .from("sop_documents")
+            .select(`
+                id,
+                sop_code,
+                part_number,
+                operation_name,
+                created_at,
+                workshops (
+                    name,
+                    code
+                ),
+                process_areas (
+                    name,
+                    code
+                ),
+                models (
+                    size_model,
+                    model_series (
+                        name
+                    )
+                ),
+                part_names (
+                    name,
+                    code
+                ),
+                sop_revisions (
+                    id,
+                    revision_number,
+                    revision_code,
+                    description,
+                    status,
+                    created_at,
+                    released_at
+                )
+            `)
+            .eq("id", sopId)
+            .single();
+        if (error) {
+            console.error("Error loading SOP:", error);
+            modalBody.innerHTML = 
+                `<p>
+                    Error loading SOP information.
+                </p>
+            `;
+            return;
         }
+        renderSopModal(data);
+        document.getElementById("sop-modal").dataset.sop = JSON.stringify(data);
+    }
+    function revisionNumber(revision) { 
+        return Number(revision?.revision_number) || parseInt(String(revision?.revision_code || "").replace(/\D/g,""),10)||0; 
+    }
+    function statusKey(value) { 
+        return String(value || "unknown").trim().toLowerCase().replace(/[\s-]+/g,"_"); 
+    }
+    function statusLabel(value) { 
+        const key=statusKey(value); 
+        return ({
+            released:"Released",
+            validation:"In Validation",
+            in_validation:"In Validation",
+            approval:"In Approval",
+            in_approval:"In Approval",
+            draft:"Draft",
+            obsolete:"Obsolete",
+            rejected:"Rejected",
+            discarded:"Discarded"
+        }[key] || String(value || "Unknown").replaceAll("_"," ").replace(/\b\w/g,char=>char.toUpperCase())); 
+    }
+    function renderStatusBadge(status) { 
+        return `<span class="status-badge status-${statusKey(status)}">${escapeHtml(statusLabel(status))}</span>`; 
+    }
+    function renderRevisionBadge(code,status) {
+        if (!code) {
+            return '<span class="revision-badge revision-unassigned">—</span>';
+        }
+        const key = statusKey(status);
+        const colorKey = ({
+            draft:"draft",
+            released:"released",
+            completed:"released",
+            in_approval:"in_approval",
+            approval:"in_approval",
+            in_validation:"in_validation",
+            validation:"in_validation",
+            rejected:"rejected",
+            obsolete:"obsolete",
+            discarded:"discarded"
+        })[key] || "draft";
+        return '<span class="revision-badge revision-' + colorKey + '">' + escapeHtml(code) + '</span>';
     }
 
+    // ==========================
+    // SOP Control SECTION
+    // ==========================
 
-
-
-    async function loadPartNames(workshopId) {
+    // Create New SOP section
+    function setCreateMode() {
+        if (typeof editingRevisionId !== "undefined") {
+            editingRevisionId = null;
+        }
+        sopMode.value = "create";
+        sopId.value = "";
+        editorTitle.textContent = "Create New SOP";
+        editorDescription.textContent = "Create a new standard operating process.";
+        revisionInfo.classList.add("hidden");
+        descriptionTitle.innerHTML = 
+            `Description 
+            <span class="required-marker" aria-hidden="true">
+                *
+            </span>`;
+        if (descriptionLabel) {
+            descriptionLabel.textContent = "Description";
+        }
+        descriptionInput.placeholder = "Describe the purpose and scope of this SOP.";
+        fileInput.value = "";
+        setFormEditable(true);
+    }
+    async function loadWorkshops() {
+        const workshopSelect = document.getElementById("sop-workshop");
+        const { data, error } = await supabaseClient
+            .from("workshops")
+            .select(`
+                id, 
+                name, 
+                code
+            `)
+            .eq("active", true)
+            .order("name");
+        if (error) {
+            console.error("Error loading workshops:", error);
+            return;
+        }
+        workshopSelect.innerHTML = '<option value="">Select workshop</option>';
+        data.forEach(workshop => {
+            const option = document.createElement("option");
+            option.value = workshop.name;
+            option.textContent = `${workshop.name} (${workshop.code})`;
+            workshopSelect.appendChild(option);
+        });
+    }
+    async function loadProcessAreas(workshopName) {
+        const processSelect = document.getElementById("sop-process");
+        processSelect.innerHTML = '<option value="">Select process area</option>';
+        processSelect.disabled = true;
+        if (!workshopName) {
+            return;
+        }
+        const { data: relations, error: relationError } = await supabaseClient
+            .from("workshop_process_areas")
+            .select("process_area")
+            .eq("workshop", workshopName);
+        if (relationError) {
+            console.error("Error loading workshop process areas:", relationError);
+            return;
+        }
+        const areaName = relations.map(item => item.process_area);
+        if (areaName.length === 0) {
+            console.warn("No process areas found for workshop:", workshopName);
+            processSelect.disabled = false;
+            return;
+        }
+        const { data: areas, error: areaError } = await supabaseClient
+            .from("process_areas")
+            .select(`
+                id, 
+                name, 
+                code
+            `)
+            .in("name", areaName)
+            .eq("active", true)
+            .order("name");
+        if (areaError) {
+            console.error("Error loading process areas:", areaError);
+            return;
+        }
+        areas.forEach(area => {
+            const option = document.createElement("option");
+            option.value = area.name;
+            option.textContent = `${area.name} (${area.code})`;
+            processSelect.appendChild(option);
+        });
+        processSelect.disabled = false;
+    }
+    async function loadModelSeries() {
+        const seriesSelect = document.getElementById("sop-model-series");
+        seriesSelect.innerHTML = '<option value="">Select model series</option>';
+        seriesSelect.disabled = true;
+        const { data, error } = await supabaseClient
+            .from("model_series")
+            .select(`
+                id, 
+                name,
+                char
+            `)
+            .eq("active", true)
+            .order("name");
+        if (error) {
+            console.error("Error loading model series:", error);
+            return;
+        }
+        data.forEach(series => {
+            const option = document.createElement("option");
+            option.value = series.name;
+            option.textContent = series.name;
+            seriesSelect.appendChild(option);
+        });
+        seriesSelect.disabled = false;
+    }
+    async function loadModels(seriesName) {
+        const modelSelect = document.getElementById("sop-model");
+        modelSelect.innerHTML = '<option value="">Select model</option>';
+        modelSelect.disabled = true;
+        if (!seriesName) {
+            return;
+        }
+        const { data, error } = await supabaseClient
+            .from("models")
+            .select(`
+                id, 
+                size_model
+            `)
+            .eq("model_series", seriesName)
+            .eq("active", true)
+            .order("size_model");
+        if (error) {
+            console.error("Error loading models:", error);
+            return;
+        }
+        data.forEach(model => {
+            const option = document.createElement("option");
+            option.value = model.size_model;
+            option.textContent = model.size_model;
+            modelSelect.appendChild(option);
+        });
+        modelSelect.disabled = false;
+    }
+    async function loadPartNames(workshopName) {
         const partNameSelect = document.getElementById("sop-part-name");
         partNameSelect.innerHTML = '<option value="">Select part name</option>';
         partNameSelect.disabled = true;
-        if (!workshopId) return;
+        if (!workshopName) {
+            return;
+        }
         const { data: relations, error: relationError } = await supabaseClient
             .from("workshop_part_names")
             .select("part_name_id")
-            .eq("workshop_id", workshopId);
+            .eq("workshop", workshopName);
         if (relationError) {
             console.error("Error loading workshop part names:", relationError);
             return;
         }
         const partNameIds = relations.map(item => item.part_name_id);
         if (partNameIds.length === 0) {
-            console.warn("No part names found for workshop:", workshopId);
+            console.warn("No part names found for workshop:", workshopName);
             partNameSelect.disabled = false;
             return;
         }
         const { data: partNames, error: partNameError } = await supabaseClient
             .from("part_names")
-            .select("id, name, code")
+            .select(`
+                id, 
+                name, 
+                code
+            `)
             .in("id", partNameIds)
             .eq("active", true)
             .order("name");
@@ -365,111 +489,33 @@ async function initializeSopPage() {
         });
         partNameSelect.disabled = false;
     }
+    document.getElementById("sop-workshop").addEventListener("change", event => {
+        const workshopName = event.target.value;
+        loadProcessAreas(workshopName);
+        loadPartNames(workshopName);
+    });
+    document.getElementById("sop-model-series").addEventListener("change", event => {
+        loadModels(event.target.value);
+    });
 
-    async function loadModels(seriesId) {
-        const modelSelect = document.getElementById("sop-model");
-        modelSelect.innerHTML = '<option value="">Select model</option>';
-        modelSelect.disabled = true;
-        if (!seriesId) return;
-        const { data, error } = await supabaseClient
-            .from("models")
-            .select("id, name")
-            .eq("model_series_id", seriesId)
-            .eq("active", true)
-            .order("name");
-        if (error) {
-            console.error("Error loading models:", error);
-            return;
-        }
-        data.forEach(model => {
-            const option = document.createElement("option");
-            option.value = model.id;
-            option.textContent = model.name;
-            modelSelect.appendChild(option);
-        });
-        modelSelect.disabled = false;
-    }
+    loadWorkshops();
+    loadModelSeries();
 
-    async function loadModelSeries() {
-        const seriesSelect = document.getElementById("sop-model-series");
-        seriesSelect.innerHTML = '<option value="">Select model series</option>';
-        seriesSelect.disabled = true;
-        const { data, error } = await supabaseClient
-            .from("model_series")
-            .select("id, name, code")
-            .eq("active", true)
-            .order("name");
-        if (error) {
-            console.error("Error loading model series:", error);
-            return;
+    sopForm.addEventListener("input", event => {
+        if (event.target.matches("input, textarea, select")) {
+            const group = event.target.closest(".form-group");
+            if (group && String(event.target.value || "").trim()) {
+                group.classList.remove("sop-field-invalid");
+                event.target.setAttribute("aria-invalid", "false");
+                group.querySelector(".sop-field-error")?.remove();
+            }
+            if (!sopForm.querySelector(".sop-field-invalid")) {
+                const alertBox = document.getElementById("sop-validation-alert");
+                alertBox.classList.add("hidden");
+                alertBox.innerHTML = "";
+            }
         }
-        data.forEach(series => {
-            const option = document.createElement("option");
-            option.value = series.id;
-            option.textContent = series.name;
-            seriesSelect.appendChild(option);
-        });
-        seriesSelect.disabled = false;
-    }
-
-    async function loadProcessAreas(workshopId) {
-        const processSelect = document.getElementById("sop-process");
-        processSelect.innerHTML = '<option value="">Select process area</option>';
-        processSelect.disabled = true;
-        if (!workshopId) return;
-        const { data: relations, error: relationError } = await supabaseClient
-            .from("workshop_process_areas")
-            .select("process_area_id")
-            .eq("workshop_id", workshopId);
-        if (relationError) {
-            console.error("Error loading workshop process areas:", relationError);
-            return;
-        }
-        const areaIds = relations.map(item => item.process_area_id);
-        if (areaIds.length === 0) {
-            console.warn("No process areas found for workshop:", workshopId);
-            processSelect.disabled = false;
-            return;
-        }
-        const { data: areas, error: areaError } = await supabaseClient
-            .from("process_areas")
-            .select("id, name, code")
-            .in("id", areaIds)
-            .eq("active", true)
-            .order("name");
-        if (areaError) {
-            console.error("Error loading process areas:", areaError);
-            return;
-        }
-        areas.forEach(area => {
-            const option = document.createElement("option");
-            option.value = area.id;
-            option.textContent = `${area.name} (${area.code})`;
-            processSelect.appendChild(option);
-        });
-        processSelect.disabled = false;
-    }
-
-    async function loadWorkshops() {
-        const workshopSelect = document.getElementById("sop-workshop");
-        const { data, error } = await supabaseClient
-            .from("workshops")
-            .select("id, name, code")
-            .eq("active", true)
-            .order("name");
-        if (error) {
-            console.error("Error loading workshops:", error);
-            return;
-        }
-        workshopSelect.innerHTML = '<option value="">Select workshop</option>';
-        data.forEach(workshop => {
-            const option = document.createElement("option");
-            option.value = workshop.id;
-            option.textContent = `${workshop.name} (${workshop.code})`;
-            workshopSelect.appendChild(option);
-        });
-    }
-
+    });
 
     function validateSopForm() {
         const alertBox = document.getElementById("sop-validation-alert");
@@ -491,7 +537,9 @@ async function initializeSopPage() {
             group?.classList.toggle("sop-field-invalid", empty);
             input.setAttribute("aria-invalid", empty ? "true" : "false");
             const existingError = group?.querySelector(".sop-field-error");
-            if (existingError) existingError.remove();
+            if (existingError) {
+                existingError.remove();
+            }
             if (empty) {
                 missing.push(field.label);
                 const message = document.createElement("small");
@@ -513,33 +561,22 @@ async function initializeSopPage() {
         alertBox.classList.add("hidden");
         alertBox.innerHTML = "";
         const originalPosition = sopForm.querySelector(".form-section");
-        if (originalPosition && alertBox.parentElement !== sopForm) originalPosition.insertAdjacentElement("beforebegin", alertBox);
+        if (originalPosition && alertBox.parentElement !== sopForm) {
+            originalPosition.insertAdjacentElement("beforebegin", alertBox);
+        }
         return true;
     }
-    sopForm.addEventListener("input", event => {
-        if (event.target.matches("input, textarea, select")) {
-            const group = event.target.closest(".form-group");
-            if (group && String(event.target.value || "").trim()) {
-                group.classList.remove("sop-field-invalid");
-                event.target.setAttribute("aria-invalid", "false");
-                group.querySelector(".sop-field-error")?.remove();
-            }
-            if (!sopForm.querySelector(".sop-field-invalid")) {
-                const alertBox = document.getElementById("sop-validation-alert");
-                alertBox.classList.add("hidden");
-                alertBox.innerHTML = "";
-            }
-        }
-    });
     async function saveNewSop({ submitForValidation = false } = {}) {
-        const workshopId = document.getElementById("sop-workshop").value;
-        const processAreaId = document.getElementById("sop-process").value;
-        const modelId = document.getElementById("sop-model").value;
-        const partNameId = document.getElementById("sop-part-name").value;
+        const workshopName = document.getElementById("sop-workshop").value;
+        const processArea = document.getElementById("sop-process").value;
+        const modelName = document.getElementById("sop-model").value;
+        const partName = document.getElementById("sop-part-name").value;
         const partNumber = document.getElementById("sop-part-number").value.trim();
         const operationName = document.getElementById("sop-operation").value.trim();
         const description = document.getElementById("sop-description").value.trim();
-        if (!validateSopForm()) return;
+        if (!validateSopForm()) {
+            return;
+        }
         const saveButton = document.getElementById("save-sop-draft");
         const submitButton = sopForm.querySelector('button[type="submit"]');
         const originalSaveText = saveButton.textContent;
@@ -551,9 +588,13 @@ async function initializeSopPage() {
         try {
             if (sopMode.value === "revision") {
                 const { data: authResult, error: authError } = await supabaseClient.auth.getUser();
-                if (authError) throw authError;
+                if (authError) {
+                    throw authError;
+                }
                 const userId = authResult?.user?.id;
-                if (!userId) throw new Error("Please sign in again before creating a revision.");
+                if (!userId) {
+                    throw new Error("Please sign in again before creating a revision.");
+                }
                 const { data: revisionData, error: revisionCreateError } = await supabaseClient.rpc("create_sop_revision", {
                     p_sop_id: Number(sopId.value),
                     p_change_summary: description,
@@ -600,19 +641,23 @@ async function initializeSopPage() {
                 return;
             }
             if (sopMode.value === "edit") {
-                if (!editingRevisionId) throw new Error("Draft revision is missing. Reopen the draft and try again.");
+                if (!editingRevisionId) {
+                    throw new Error("Draft revision is missing. Reopen the draft and try again.");
+                }
                 const { data: updateResult, error: updateError } = await supabaseClient.rpc("update_sop_draft", {
                     p_sop_id: Number(sopId.value),
                     p_revision_id: Number(editingRevisionId),
-                    p_workshop_id: Number(workshopId),
-                    p_process_area_id: Number(processAreaId),
-                    p_model_id: Number(modelId),
-                    p_part_name_id: Number(partNameId),
+                    p_workshop: workshopName,
+                    p_process_area: processArea,
+                    p_model: modelName,
+                    p_part_name: partName,
                     p_part_number: partNumber,
                     p_operation_name: operationName,
                     p_description: description
                 });
-                if (updateError) throw updateError;
+                if (updateError) {
+                    throw updateError;
+                }
                 if (submitForValidation) {
                     const { error: workflowError } = await supabaseClient.rpc("workflow_start_instance", {
                         p_definition_id: 1,
@@ -640,15 +685,17 @@ async function initializeSopPage() {
                 return;
             }
             const { data, error } = await supabaseClient.rpc("create_new_sop", {
-                p_workshop_id: Number(workshopId),
-                p_process_area_id: Number(processAreaId),
-                p_model_id: Number(modelId),
-                p_part_name_id: Number(partNameId),
+                p_workshop_name: workshopName,
+                p_process_area: processArea,
+                p_model_name: modelName,
+                p_part_name: partName,
                 p_part_number: partNumber,
                 p_operation_name: operationName,
                 p_description: description
             });
-            if (error) throw error;
+            if (error) {
+                throw error;
+            }
             const createdSop = Array.isArray(data) ? data[0] : data;
             if (!createdSop?.sop_id || !createdSop?.revision_code) {
                 console.error("Unexpected create_new_sop response:", data);
@@ -705,30 +752,24 @@ async function initializeSopPage() {
         }
     }
 
-    loadWorkshops();
-    document.getElementById("sop-workshop").addEventListener("change", event => {
-        const workshopId = event.target.value;
-        loadProcessAreas(workshopId);
-        loadPartNames(workshopId);
-    });
-    document.getElementById("sop-model-series").addEventListener("change", event => {
-        loadModels(event.target.value);
-    });
-    loadModelSeries();
-
-    // Removed duplicate legacy click handler; the configured handler above handles Save Draft.
-
-
-
-
-
+    // My Draft section
+    function setMyDraftsCount(count) {
+        const counter = document.getElementById("my-drafts-count");
+        if (counter) {
+            counter.textContent = String(count);
+        }
+    }
     async function loadMyDrafts() {
         const body = document.getElementById("sop-drafts-body");
-        if (!body) return;
+        if (!body) {
+            return;
+        }
         body.innerHTML = '<tr><td colspan="8">Loading your drafts...</td></tr>';
         try {
             const { data: authData, error: authError } = await supabaseClient.auth.getUser();
-            if (authError) throw authError;
+            if (authError) {
+                throw authError;
+            }
             const userId = authData?.user?.id;
             if (!userId) {
                 setMyDraftsCount(0);
@@ -737,11 +778,34 @@ async function initializeSopPage() {
             }
             const { data: revisions, error: revisionError } = await supabaseClient
                 .from("sop_revisions")
-                .select("id,sop_id,revision_code,revision_number,status,created_at,created_by,description,sop_documents!inner(id,sop_code,part_number,operation_name,created_at,created_by,workshops(name),process_areas(name),models(name),part_names(name))")
+                .select(`
+                    id,
+                    sop_id,
+                    revision_code,
+                    revision_number,
+                    status,
+                    created_at,
+                    created_by,
+                    description,
+                    sop_documents!inner(
+                        id,
+                        sop_code,
+                        part_number,
+                        operation_name,
+                        created_at,
+                        created_by,
+                        workshops(name),
+                        process_areas(name),
+                        models(size_model),
+                        part_names(code)
+                    )
+                `)
                 .eq("created_by", userId)
                 .eq("status", "Draft")
                 .order("created_at", { ascending: false });
-            if (revisionError) throw revisionError;
+            if (revisionError) {
+                throw revisionError;
+            }
             const drafts = (revisions || []).map(revision => ({
                 doc: revision.sop_documents,
                 revision
@@ -751,17 +815,115 @@ async function initializeSopPage() {
                 body.innerHTML = '<tr><td colspan="8">You have no draft SOPs.</td></tr>';
                 return;
             }
-            body.innerHTML = drafts.map(item => '<tr class="catalog-clickable-row" tabindex="0" role="button" data-sop-id="' + escapeHtml(item.doc.id) + '" aria-label="View SOP ' + escapeHtml(item.doc.sop_code || "Unassigned") + '"><td>' + escapeHtml(item.doc.sop_code || "Unassigned") + '</td><td>' + escapeHtml(item.doc.workshops?.name || "") + '</td><td>' + escapeHtml(item.doc.process_areas?.name || "") + '</td><td>' + escapeHtml(item.doc.models?.name || "") + '</td><td>' + escapeHtml(item.doc.part_names?.name || "") + '</td><td>' + escapeHtml(item.doc.part_number || "") + '</td><td>' + escapeHtml(item.doc.operation_name || "") + '</td></tr>').join("");
+            body.innerHTML = drafts.map(item => 
+                `<tr 
+                class="catalog-clickable-row" 
+                tabindex="0" 
+                role="button" 
+                data-sop-id="${escapeHtml(item.doc.id)}" 
+                aria-label="View SOP ${escapeHtml(item.doc.sop_code || "Unassigned")}">
+                    <td>${escapeHtml(item.doc.sop_code || "Unassigned")}</td>
+                    <td>${escapeHtml(item.doc.workshops?.name || "")}</td>
+                    <td>${escapeHtml(item.doc.process_areas?.name || "")}</td>
+                    <td>${escapeHtml(item.doc.models?.size_model || "")}</td>
+                    <td>${escapeHtml(item.doc.part_names?.code || "")}</td>
+                    <td>${escapeHtml(item.doc.part_number || "")}</td>
+                    <td>${escapeHtml(item.doc.operation_name || "")}</td>
+                </tr>`
+            ).join("");
         } catch (error) {
             console.error("Error loading My Drafts:", error);
             const counter = document.getElementById("my-drafts-count");
             if (counter) counter.title = "Could not refresh. See browser console.";
-            body.innerHTML = '<tr><td colspan="8">Unable to load drafts. Check Supabase permissions and the browser console.</td></tr>';
+            body.innerHTML = 
+            `<tr>
+                <td colspan="8">
+                    Unable to load drafts. Check Supabase permissions and the browser console.
+                </td>
+            </tr>`;
         }
     }
-    function escapeHtml(value) {
-        return String(value ?? "").replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+    async function openEditSop(draftSopId) {
+        try {
+            const { data: authResult, error: authError } = await supabaseClient.auth.getUser();
+            if (authError) {
+                throw authError;
+            }
+            const userId = authResult?.user?.id;
+            if (!userId) {
+                throw new Error("Please sign in again.");
+            }
+            const { data: sop, error } = await supabaseClient
+                .from("sop_documents")
+                .select(`
+                    id,
+                    workshop,
+                    process_area,
+                    model,
+                    part_name,
+                    part_number,
+                    operation_name,
+                    created_by,
+                    models(model_series),
+                    part_names(id),
+                    sop_revisions(
+                        id,
+                        revision_number,
+                        revision_code,
+                        status,
+                        description,
+                        created_by,
+                        created_at
+                    )
+                `)
+                .eq("id", Number(draftSopId))
+                .single();
+            if (error) {
+                throw error;
+            }
+            const revision = (sop.sop_revisions || []).find(item => String(item.status || "").toLowerCase() === "draft" && String(item.created_by || sop.created_by) === String(userId));
+            if (!revision) {
+                throw new Error("This SOP has no editable Draft revision.");
+            }
+            
+            const seriesModel = sop.models?.model_series;
+            await loadWorkshops();
+            await loadModelSeries();
+            await loadProcessAreas(sop.workshop);
+            await loadModels(seriesModel);
+            await loadPartNames(sop.workshop);
+            
+            document.getElementById("sop-workshop").value = String(sop.workshop);
+            document.getElementById("sop-process").value = String(sop.process_area);
+            document.getElementById("sop-model-series").value = String(seriesModel || "");
+            document.getElementById("sop-model").value = String(sop.model);
+            document.getElementById("sop-part-name").value = String(sop.part_names?.id);
+            document.getElementById("sop-part-number").value = sop.part_number || "";
+            document.getElementById("sop-operation").value = sop.operation_name || "";
+            document.getElementById("sop-description").value = revision.description || "";
+            document.getElementById("sop-file").value = "";
+
+            sopMode.value = "edit";
+            sopId.value = String(sop.id);
+            editingRevisionId = revision.id;
+            editorTitle.textContent = "Edit Draft SOP";
+            editorDescription.textContent = "Update the details of this draft before submitting it for validation.";
+            descriptionTitle.textContent = "Description";
+            if (descriptionLabel) {
+                descriptionLabel.textContent = "Description";
+            }
+            revisionInfo.classList.add("hidden");
+            setFormEditable(true);
+            showSection("sop-create");
+        } catch (error) {
+            console.error("Error opening draft for editing:", error);
+            alert("Could not open this draft for editing. " + (error?.message || ""));
+        }
     }
+
+    loadMyDrafts();
+
+    document.querySelectorAll('[data-section="sop-drafts"]').forEach(button => button.addEventListener("click", loadMyDrafts));
     document.addEventListener("click", async event => {
         const workflowRow = event.target.closest("#sop-workflow-body .workflow-clickable-row");
         if (workflowRow && !event.target.closest("button, a, input, select, textarea, label")) { viewSop(workflowRow.dataset.sopId); return; }
@@ -845,98 +1007,548 @@ async function initializeSopPage() {
             submitButton.disabled = false;
         }
     });
+
+    // Workflow section
+    async function loadSopTaskCatalog(sectionId) {
+        const body = document.getElementById(sectionId + "-body"); 
+        if (!body) {
+            return;
+        }
+        body.innerHTML = '<tr><td colspan="11">Loading...</td></tr>';
+
+        try {
+            const { data: instances, error } = await supabaseClient
+            .from("workflow_instances")
+            .select(`
+                id,
+                source_document_id,
+                source_revision_id,
+                status,
+                current_node_id,
+                started_at,
+                completed_at
+            `)
+            .in("status", [
+                "active", 
+                "in_progress", 
+                "pending"
+            ])
+            .order("started_at", { ascending: false }); 
+            
+            if (error) {
+                throw error;
+            }
+            
+            const docIds = [...new Set((instances || []).map(item => item.source_document_id).filter(Boolean))]; 
+            const revisionIds = [...new Set((instances || []).map(item => item.source_revision_id).filter(Boolean))];
+            
+            const [docs, revisions, nodes] = await Promise.all([docIds.length ? supabaseClient
+                .from("sop_documents")
+                .select(`
+                    id,
+                    sop_code,
+                    part_number,
+                    operation_name,
+                    created_at,
+                    created_by,
+                    workshops(name),
+                    process_areas(name),
+                    models(size_model),
+                    part_names(code)
+                `)
+                .in("id", docIds) 
+
+                : Promise.resolve({data:[],error:null}),revisionIds.length ? supabaseClient
+                .from("sop_revisions")
+                .select(`
+                    id,
+                    revision_code,
+                    status,
+                    created_at,
+                    created_by
+                `)
+                .in("id",revisionIds) 
+                
+                : Promise.resolve({data:[],error:null}),supabaseClient
+                .from("workflow_nodes")
+                .select(`
+                    id,
+                    label,
+                    node_type
+                `)
+            ]);
+            
+            for (const result of [docs, revisions, nodes]) {
+                if (result.error) {
+                    throw result.error;
+                }
+            }
+            
+            const docMap = new Map((docs.data || []).map(item => [String(item.id),item]));
+            const revisionMap = new Map((revisions.data || []).map(item => [String(item.id),item]));
+            const nodeMap = new Map((nodes.data || []).map(item => [String(item.id),item]));
+            const latestBySop = new Map(); 
+            
+            (instances || []).forEach(instance => { 
+                const key = String(instance.source_document_id || ""); 
+                if(key && !latestBySop.has(key)) {
+                    latestBySop.set(key,instance); 
+                }
+            });
+            
+            let rows = [...latestBySop.values()].map(instance => { 
+                const doc = docMap.get(String(instance.source_document_id)) || {}, 
+                revision = revisionMap.get(String(instance.source_revision_id)) || {}, 
+                node = nodeMap.get(String(instance.current_node_id)) || {}, 
+                status = String(instance.status||"pending").toLowerCase(), 
+                stage = 
+                    status === "completed"? "Completed" : 
+                    status === "rejected"? "Rejected" : 
+                    String(node.label || node.node_type || "In progress"); 
+                return { 
+                    instance,
+                    doc,
+                    revision,
+                    node,
+                    status,
+                    stage
+                }; 
+            });
+            
+            const creatorIds = [...new Set(rows.map(row => row.revision.created_by || row.doc.created_by).filter(Boolean))];
+            
+            const profileResult = creatorIds.length?await supabaseClient
+            .from("user_profile_names")
+            .select(`
+                id,
+                full_name
+            `)
+            .in("id",creatorIds) : {data:[],error:null};
+            
+            if (profileResult.error) {
+                console.warn("Creator names unavailable in workflow catalog:",profileResult.error);
+            }
+            
+            const creatorMap = new Map((profileResult.data || []).map(profile => [String(profile.id), profile.full_name || "Unknown"]));
+            
+            if (sectionId === "sop-validation") {
+                rows = rows.filter(row => 
+                    /validat/i.test(row.stage) && 
+                    !["completed", "rejected"].includes(row.status));
+            }
+            
+            if (sectionId === "sop-approval") {
+                rows = rows.filter(row => 
+                    /approv/i.test(row.stage) && 
+                    !["completed","rejected"].includes(row.status));
+            }
+            
+            if (!rows.length) { 
+                body.innerHTML = '<tr><td colspan="11">No records found.</td></tr>'; 
+                return; 
+            }
+            
+            body.innerHTML = rows.map(({
+                instance,
+                doc,
+                revision,
+                status,
+                stage
+            }) => 
+                '<tr class="catalog-clickable-row workflow-clickable-row" tabindex="0" role="button" data-sop-id="' + 
+                escapeHtml(doc.id || instance.source_document_id) + '" data-instance-id="' + 
+                escapeHtml(instance.id) + '" aria-label="Review SOP ' + 
+                escapeHtml(doc.sop_code || "Unassigned") + `">
+                    <td>` + escapeHtml(formatDate(instance.started_at || doc.created_at)) + `</td>
+                    <td>` + renderStatusBadge(status === "active" || status === "in_progress" ? stage : status) + `</td>
+                    <td>` + escapeHtml(doc.sop_code || "Unassigned") + `</td>
+                    <td>` + escapeHtml(doc.workshops?.name || "") + `</td>
+                    <td>` + escapeHtml(doc.process_areas?.name || "") + `</td>
+                    <td>` + escapeHtml(doc.models?.size_model || "") + `</td>
+                    <td>` + escapeHtml(doc.part_names?.code || "") + `</td>
+                    <td>` + escapeHtml(doc.part_number || "") + `</td>
+                    <td>` + escapeHtml(doc.operation_name || "") + `</td>
+                    <td>` + renderRevisionBadge(revision.revision_code, revision.status) + `</td>
+                    <td>` + escapeHtml(creatorMap.get(String(revision.created_by || doc.created_by || "")) || "Unknown") + `</td>
+                </tr>`)
+                .join("");
+
+        } catch (error) { 
+            console.error("Unable to load SOP task catalog:",error); 
+            body.innerHTML = '<tr><td colspan="11">Unable to load records. Check permissions and the browser console.</td></tr>'; }
+    }
+    async function loadSopWorkflow() { 
+        await loadSopTaskCatalog("sop-workflow"); 
+    }
+    async function refreshWorkflowCounts() {
+        try {
+            
+            const { data: instances, error: instanceError } = await supabaseClient
+            .from("workflow_instances")
+            .select(`
+                id,
+                status`
+            )
+            .in("status", 
+                [
+                    "active", 
+                    "in_progress", 
+                    "pending"
+                ]
+            );
+
+            if (instanceError) {
+                throw instanceError;
+            }
+
+            const active = instances || [];
+            if (!active.length) {
+                document.getElementById("pending-validation-count").textContent = "0";
+                document.getElementById("pending-approval-count").textContent = "0";
+                return;
+            }
+
+            const ids = active.map(item => item.id);
+            const [taskResult, nodeResult] = await Promise.all([
+                supabaseClient
+                .from("workflow_tasks")
+                .select(`
+                    instance_id,
+                    node_id,status
+                `)
+                .in("instance_id", ids),
+
+                supabaseClient
+                .from("workflow_nodes")
+                .select(`
+                    id,
+                    label,
+                    node_type,
+                    required_permission_code
+                `)
+            ]);
+
+            if (taskResult.error) {
+                throw taskResult.error;
+            }
+            if (nodeResult.error) {
+                throw nodeResult.error;
+            }
+
+            const nodeMap = new Map((nodeResult.data || []).map(node => [String(node.id), node]));
+            const pending = (taskResult.data || [])
+            .filter(task => [
+                "pending",
+                "assigned",
+                "in_progress"
+            ].includes(String(task.status || "").toLowerCase()));
+
+            let validationCount = 0;
+            let approvalCount = 0;
+
+            pending.forEach(task => {
+                const node = nodeMap.get(String(task.node_id));
+                const permission = String(node?.required_permission_code || "").toLowerCase();
+                const stage = [node?.label,node?.node_type].filter(Boolean).join(" ").toLowerCase();
+
+                if (permission === "documents.sop.validate" || stage.includes("validat")) 
+                    validationCount++;
+                else if (permission === "documents.sop.approve" || stage.includes("approv")) 
+                    approvalCount++;
+            });
+
+            document.getElementById("pending-validation-count").textContent = String(validationCount);
+            document.getElementById("pending-approval-count").textContent = String(approvalCount);
+        } catch (error) {
+            console.error("Unable to refresh SOP workflow counters:", error);
+            const validationCount = document.getElementById("pending-validation-count");
+            const approvalCount = document.getElementById("pending-approval-count");
+
+            if (validationCount) {
+                validationCount.title = "Could not refresh. See browser console.";
+            }
+            if (approvalCount) {
+                approvalCount.title = "Could not refresh. See browser console.";
+            }
+        }
+    }
+
+    window.addEventListener("focus", () => {
+        if (!document.getElementById("sop-control")?.classList.contains("hidden")) {
+            refreshWorkflowCounts();
+        }
+    });
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible" && !document.getElementById("sop-control")?.classList.contains("hidden")) {
+            refreshWorkflowCounts();
+        }
+    });
+
+
+    // ==========================
+    // SOP Index SECTION
+    // ==========================
+
+    // Filter section
+    function initializeSopCatalogFilters() {
+        document.getElementById("sop-search-box")?.addEventListener("input",applySopCatalogFilters);
+        [
+            "filter-area",
+            "filter-process",
+            "filter-series",
+            "filter-model",
+            "filter-part-name",
+            "filter-created-by",
+            "filter-status"
+        ].forEach(id => document.getElementById(id)?.addEventListener("change", applySopCatalogFilters));
+        document.getElementById("clear-sop-filters")?.addEventListener("click", () => {
+            const search = document.getElementById("sop-search-box");
+            if (search) {
+                search.value="";
+            }
+            [
+                "filter-area",
+                "filter-process",
+                "filter-series",
+                "filter-model",
+                "filter-part-name",
+                "filter-created-by",
+                "filter-status"
+            ].forEach(id => {
+                const select=document.getElementById(id);
+                if(select){
+                    select.value="";
+                }
+            });
+            applySopCatalogFilters();
+        });
+        document.querySelectorAll("[data-table-search]").forEach(input => input.addEventListener("input", () => {
+            const body = document.getElementById(input.dataset.tableSearch);
+            const query = input.value.trim().toLowerCase();
+            body?.querySelectorAll("tr").forEach(row => 
+                row.hidden = Boolean(query) && 
+                !row.textContent.toLowerCase().includes(query));
+            }
+        ));
+        document.addEventListener("click",event => { 
+            const row = event.target.closest("#sop-catalog-body .catalog-clickable-row");
+            if (row && !event.target.closest("button, a, input, select, textarea, label")){
+                viewSop(row.dataset.sopId);
+            }
+        });
+        document.addEventListener("keydown",event => {
+            const row = event.target.closest("#sop-catalog-body .catalog-clickable-row");
+            if (row && (event.key === "Enter" || event.key === " ")){
+                event.preventDefault();
+                viewSop(row.dataset.sopId);
+            }
+        });
+    }
+    function initializeCatalogSorting() {
+        document.querySelectorAll(".catalog-table table").forEach(table => table.querySelectorAll("thead th").forEach((header, index) => {
+            header.title = "Sort by " + header.textContent.trim(); 
+            header.setAttribute("aria-sort", "none");
+            header.addEventListener("click", () => { 
+                const body = table.tBodies[0]; 
+                if (!body) {
+                    return; 
+                }
+                const direction = header.dataset.sortDirection === "A-Z"? "Z-A": "A-Z"; 
+                table.querySelectorAll("thead th").forEach(item => {
+                    delete item.dataset.sortDirection;
+                    item.setAttribute("aria-sort", "none");
+                }); 
+                header.dataset.sortDirection = direction;
+                header.setAttribute("aria-sort", direction === "A-Z"? "ascending": "descending");
+                const rows = [...body.rows].filter(row => row.cells.length > 1); 
+                rows.sort((a, b) => {
+                    const av = (a.cells[index]?.innerText || "").trim();
+                    const bv = (b.cells[index]?.innerText || "").trim();
+                    const ad = Date.parse(av),bd=Date.parse(bv);
+                    const cmp = 
+                        /date/i.test(header.textContent) && 
+                        !Number.isNaN(ad) && 
+                        !Number.isNaN(bd)? ad-bd
+                        : av.localeCompare(bv, undefined, {
+                            numeric: true, 
+                            sensitivity: "base"
+                        });
+                    return direction === "A-Z"? cmp: -cmp;
+                });
+                rows.forEach(row => body.appendChild(row));
+            });
+        }));
+    }
+    function populateSopCatalogFilters() {
+        const fields = [
+            ["filter-area", "area", "All areas"],
+            ["filter-process", "process", "All processes"],
+            ["filter-series", "series", "All model series"],
+            ["filter-model", "model", "All sizes"],
+            ["filter-part-name", "partName", "All part names"],
+            ["filter-created-by", "createdBy", "All creators"],
+            ["filter-status", "status", "All statuses"]
+        ];
+        fields.forEach(([id, key, label]) => {
+            const select = document.getElementById(id);
+            if (!select) {
+                return;
+            }
+            const previous = select.value;
+            const values = [...new Set([...document
+                .querySelectorAll("#sop-catalog-body tr")]
+                .map(row => row.dataset[key])
+                .filter(Boolean))]
+                .sort((a, b) => a.localeCompare(b));
+
+            select.innerHTML=
+                `<option value="">
+                    ${escapeHtml(label)}
+                </option>
+                ${values.map(value => 
+                `<option value="${escapeHtml(value)}">
+                    ${escapeHtml(value)}
+                </option>
+                `).join("")}`;
+            select.value = values.includes(previous)?previous:"";
+        });
+    }
+    function applySopCatalogFilters() {
+        const query = (document.getElementById("sop-search-box")?.value || "").trim().toLowerCase();
+        const filters = {
+            area: document.getElementById("filter-area")?.value || "",
+            process: document.getElementById("filter-process")?.value || "",
+            series: document.getElementById("filter-series")?.value || "",
+            model: document.getElementById("filter-model")?.value || "",
+            partName: document.getElementById("filter-part-name")?.value || "",
+            createdBy: document.getElementById("filter-created-by")?.value || "",
+            status: document.getElementById("filter-status")?.value || ""
+        };
+        document.querySelectorAll("#sop-catalog-body tr").forEach(row => {
+            const textMatch = !query || row.textContent.toLowerCase().includes(query);
+            const filterMatch = Object.entries(filters).every(([key, value]) => !value || row.dataset[key] === value);
+            row.hidden = !(textMatch&&filterMatch);
+        });
+    }
+
+    initializeSopCatalogFilters();
+    initializeCatalogSorting();
+
+    // Index section
+    function renderSopCatalog(sops, creatorMap = new Map()) {
+        const body = document.getElementById("sop-catalog-body"); 
+        body.innerHTML = "";
+        sops.forEach(sop => {
+            const revisions = sop.sop_revisions || [];
+            const released = revisions.filter(revision => String(revision.status || "").toLowerCase() === "released");
+            const current = [...(released.length? released: revisions)].sort((a, b) => revisionNumber(b) - revisionNumber(a))[0];
+            const creator = creatorMap.get(String(current?.created_by || sop.created_by)) || "Unknown";
+            const status = current?.status || "Unknown";
+            const row = document.createElement("tr"); 
+
+            row.className = "catalog-clickable-row"; 
+            row.tabIndex = 0; 
+            row.setAttribute("role", "button"); 
+            row.setAttribute("aria-label", "View SOP " + (sop.sop_code || "Unassigned")); 
+            row.dataset.sopId = String(sop.id);
+            row.dataset.area = sop.workshops?.name || ""; 
+            row.dataset.process = sop.process_areas?.name || ""; 
+            row.dataset.series = sop.models?.model_series?.name || ""; 
+            row.dataset.model = sop.models?.size_model || ""; 
+            row.dataset.partName = sop.part_names?.code || ""; 
+            row.dataset.createdBy = creator; 
+            row.dataset.status = statusLabel(status);
+            
+            row.innerHTML = 
+                `<td>${escapeHtml(formatDate(current?.released_at||current?.created_at||sop.created_at))}</td>
+                <td>${renderStatusBadge(status)}</td>
+                <td>${escapeHtml(sop.sop_code||"Unassigned")}</td>
+                <td>${escapeHtml(sop.workshops?.name||"")}</td>
+                <td>${escapeHtml(sop.process_areas?.name||"")}</td>
+                <td>${escapeHtml(sop.models?.size_model||"")}</td>
+                <td>${escapeHtml(sop.part_names?.code||"")}</td>
+                <td>${escapeHtml(sop.part_number||"")}</td>
+                <td>${escapeHtml(sop.operation_name||"")}</td>
+                <td>${renderRevisionBadge(current?.revision_code,status)}</td>
+                <td>${escapeHtml(creator)}</td>
+            `;
+            body.appendChild(row);
+        });
+    }
     async function loadSopCatalog() {
         const catalogBody = document.getElementById("sop-catalog-body");
         catalogBody.innerHTML = '<tr><td colspan="12">Loading...</td></tr>';
-        const { data, error } = await supabaseClient.from("sop_documents").select(`
-            id,sop_code,part_number,operation_name,created_at,created_by,
-            workshops(name,code),process_areas(name,code),models(name,model_series(name,code)),part_names(name,code),
-            sop_revisions(revision_number,revision_code,status,created_at,created_by,released_at)
+        const { data, error } = await supabaseClient
+            .from("sop_documents")
+            .select(`
+                id,
+                sop_code,
+                part_number,
+                operation_name,
+                created_at,
+                created_by,
+                workshops(
+                    name,
+                    code
+                ),
+                process_areas(
+                    name,
+                    code
+                ),
+                models(
+                    size_model,
+                    model_series(
+                        name,
+                        char
+                    )
+                ),
+                part_names(
+                    name,
+                    code
+                ),
+                sop_revisions(
+                    revision_number,
+                    revision_code,
+                    status,
+                    created_at,
+                    created_by,
+                    released_at
+                )
         `).order("created_at", { ascending: false });
-        if (error) { console.error("Error loading SOP catalog:", error); catalogBody.innerHTML = '<tr><td colspan="12">Error loading SOP catalog.</td></tr>'; return; }
-        if (!data || data.length === 0) { catalogBody.innerHTML = '<tr><td colspan="12">No SOPs found.</td></tr>'; populateSopCatalogFilters(); return; }
-        const creatorIds = [...new Set(data.map(sop => { const revs=sop.sop_revisions||[]; const released=revs.filter(r=>String(r.status||"").toLowerCase()==="released"); const current=[...(released.length?released:revs)].sort((a,b)=>revisionNumber(b)-revisionNumber(a))[0]; return current?.created_by||sop.created_by; }).filter(Boolean))];
+
+        if (error) { 
+            console.error("Error loading SOP catalog:", error); 
+            catalogBody.innerHTML = '<tr><td colspan="12">Error loading SOP catalog.</td></tr>'; 
+            return; 
+        }
+        if (!data || data.length === 0) { 
+            catalogBody.innerHTML = '<tr><td colspan="12">No SOPs found.</td></tr>'; 
+            populateSopCatalogFilters(); 
+            return; 
+        }
+        const creatorIds = [...new Set(data.map(sop => { 
+            const revs=sop.sop_revisions || []; 
+            const released=revs.filter(r=>String(r.status||"").toLowerCase()==="released"); 
+            const current=[...(released.length?released:revs)].sort((a,b)=>revisionNumber(b)-revisionNumber(a))[0]; 
+            return current?.created_by || sop.created_by; 
+        }).filter(Boolean))];
         let profiles=[];
         if (creatorIds.length) { const profileResult=await supabaseClient.from("user_profile_names").select("id,full_name").in("id",creatorIds); if(profileResult.error) console.warn("Creator names unavailable in SOP catalog:",profileResult.error); else profiles=profileResult.data||[]; }
         renderSopCatalog(data,new Map(profiles.map(profile=>[String(profile.id),profile.full_name||"Unknown"])));
         populateSopCatalogFilters();
         applySopCatalogFilters();
     }
-    function revisionNumber(revision) { return Number(revision?.revision_number)||parseInt(String(revision?.revision_code||"").replace(/\D/g,""),10)||0; }
-    function statusKey(value) { return String(value||"unknown").trim().toLowerCase().replace(/[\s-]+/g,"_"); }
-    function statusLabel(value) { const key=statusKey(value); return ({released:"Released",validation:"In Validation",in_validation:"In Validation",approval:"In Approval",in_approval:"In Approval",draft:"Draft",obsolete:"Obsolete",rejected:"Rejected",discarded:"Discarded"}[key]||String(value||"Unknown").replaceAll("_"," ").replace(/\b\w/g,char=>char.toUpperCase())); }
-    function renderStatusBadge(status) { return '<span class="status-badge status-' + statusKey(status) + '">' + escapeHtml(statusLabel(status)) + '</span>'; }
-    function renderRevisionBadge(code,status) {
-        if (!code) return '<span class="revision-badge revision-unassigned">—</span>';
-        const key = statusKey(status);
-        const colorKey = ({draft:"draft",released:"released",completed:"released",in_approval:"in_approval",approval:"in_approval",in_validation:"in_validation",validation:"in_validation",rejected:"rejected",obsolete:"obsolete",discarded:"discarded"})[key] || "draft";
-        return '<span class="revision-badge revision-' + colorKey + '">' + escapeHtml(code) + '</span>';
-    }
-    function renderSopCatalog(sops,creatorMap=new Map()) {
-        const body=document.getElementById("sop-catalog-body"); body.innerHTML="";
-        sops.forEach(sop=>{
-            const revisions=sop.sop_revisions||[];
-            const released=revisions.filter(revision=>String(revision.status||"").toLowerCase()==="released");
-            const current=[...(released.length?released:revisions)].sort((a,b)=>revisionNumber(b)-revisionNumber(a))[0];
-            const creator=creatorMap.get(String(current?.created_by||sop.created_by))||"Unknown";
-            const status=current?.status||"Unknown";
-            const row=document.createElement("tr"); row.className="catalog-clickable-row"; row.tabIndex=0; row.setAttribute("role","button"); row.setAttribute("aria-label","View SOP "+(sop.sop_code||"Unassigned")); row.dataset.sopId=String(sop.id);
-            row.dataset.area=sop.workshops?.name||""; row.dataset.process=sop.process_areas?.name||""; row.dataset.series=sop.models?.model_series?.name||""; row.dataset.model=sop.models?.name||""; row.dataset.partName=sop.part_names?.name||""; row.dataset.createdBy=creator; row.dataset.status=statusLabel(status);
-            row.innerHTML = "<td>"+escapeHtml(formatDate(current?.released_at||current?.created_at||sop.created_at))+"</td>"+
-                "<td>"+renderStatusBadge(status)+"</td>"+
-                "<td>"+escapeHtml(sop.sop_code||"Unassigned")+"</td>"+
-                "<td>"+escapeHtml(sop.workshops?.name||"")+"</td>"+
-                "<td>"+escapeHtml(sop.process_areas?.name||"")+"</td>"+
-                "<td>"+escapeHtml(sop.models?.name||"")+"</td>"+
-                "<td>"+escapeHtml(sop.part_names?.name||"")+"</td>"+
-                "<td>"+escapeHtml(sop.part_number||"")+"</td>"+
-                "<td>"+escapeHtml(sop.operation_name||"")+"</td>"+
-                "<td>"+renderRevisionBadge(current?.revision_code,status)+"</td>"+
-                "<td>"+escapeHtml(creator)+"</td>";
-            body.appendChild(row);
-        });
-    }
-    function populateSopCatalogFilters() {
-        const fields=[["filter-area","area","All areas"],["filter-process","process","All processes"],["filter-series","series","All model series"],["filter-model","model","All sizes"],["filter-part-name","partName","All part names"],["filter-created-by","createdBy","All creators"],["filter-status","status","All statuses"]];
-        fields.forEach(([id,key,label])=>{const select=document.getElementById(id);if(!select)return;const previous=select.value;const values=[...new Set([...document.querySelectorAll("#sop-catalog-body tr")].map(row=>row.dataset[key]).filter(Boolean))].sort((a,b)=>a.localeCompare(b));select.innerHTML='<option value="">' + escapeHtml(label) + '</option>'+values.map(value=>'<option value="' + escapeHtml(value) + '">' + escapeHtml(value) + '</option>').join("");select.value=values.includes(previous)?previous:"";});
-    }
-    function applySopCatalogFilters() {
-        const query=(document.getElementById("sop-search-box")?.value||"").trim().toLowerCase();
-        const filters={area:document.getElementById("filter-area")?.value||"",process:document.getElementById("filter-process")?.value||"",series:document.getElementById("filter-series")?.value||"",model:document.getElementById("filter-model")?.value||"",partName:document.getElementById("filter-part-name")?.value||"",createdBy:document.getElementById("filter-created-by")?.value||"",status:document.getElementById("filter-status")?.value||""};
-        document.querySelectorAll("#sop-catalog-body tr").forEach(row=>{const textMatch=!query||row.textContent.toLowerCase().includes(query);const filterMatch=Object.entries(filters).every(([key,value])=>!value||row.dataset[key]===value);row.hidden=!(textMatch&&filterMatch);});
-    }
-    function initializeSopCatalogFilters() {
-        document.getElementById("sop-search-box")?.addEventListener("input",applySopCatalogFilters);
-        ["filter-area","filter-process","filter-series","filter-model","filter-part-name","filter-created-by","filter-status"].forEach(id=>document.getElementById(id)?.addEventListener("change",applySopCatalogFilters));
-        document.getElementById("clear-sop-filters")?.addEventListener("click",()=>{const search=document.getElementById("sop-search-box");if(search)search.value="";["filter-area","filter-process","filter-series","filter-model","filter-part-name","filter-created-by","filter-status"].forEach(id=>{const select=document.getElementById(id);if(select)select.value="";});applySopCatalogFilters();});
-        document.querySelectorAll("[data-table-search]").forEach(input=>input.addEventListener("input",()=>{const body=document.getElementById(input.dataset.tableSearch);const query=input.value.trim().toLowerCase();body?.querySelectorAll("tr").forEach(row=>row.hidden=Boolean(query)&&!row.textContent.toLowerCase().includes(query));}));
-        document.addEventListener("click",event=>{const row=event.target.closest("#sop-catalog-body .catalog-clickable-row");if(row&&!event.target.closest("button,a,input,select,textarea,label"))viewSop(row.dataset.sopId);});
-        document.addEventListener("keydown",event=>{const row=event.target.closest("#sop-catalog-body .catalog-clickable-row");if(row&&(event.key==="Enter"||event.key===" ")){event.preventDefault();viewSop(row.dataset.sopId);}});
-    }
-    function formatDate(dateString) {
-        if (!dateString) return "";
-        return new Date(dateString).toLocaleDateString("en-US");
-    }
-    function initializeCatalogSorting() {
-        document.querySelectorAll(".catalog-table table").forEach(table => table.querySelectorAll("thead th").forEach((header,index) => {
-            header.title = "Sort by " + header.textContent.trim(); header.setAttribute("aria-sort","none");
-            header.addEventListener("click", () => { const body=table.tBodies[0]; if(!body)return; const direction=header.dataset.sortDirection==="A-Z"?"Z-A":"A-Z"; table.querySelectorAll("thead th").forEach(item=>{delete item.dataset.sortDirection;item.setAttribute("aria-sort","none");}); header.dataset.sortDirection=direction;header.setAttribute("aria-sort",direction==="A-Z"?"ascending":"descending");
-                const rows=[...body.rows].filter(row=>row.cells.length>1); rows.sort((a,b)=>{const av=(a.cells[index]?.innerText||"").trim(),bv=(b.cells[index]?.innerText||"").trim();const ad=Date.parse(av),bd=Date.parse(bv);const cmp=/date/i.test(header.textContent)&&!Number.isNaN(ad)&&!Number.isNaN(bd)?ad-bd:av.localeCompare(bv,undefined,{numeric:true,sensitivity:"base"});return direction==="A-Z"?cmp:-cmp;});rows.forEach(row=>body.appendChild(row));
-            });
-        }));
-    }
-    initializeSopCatalogFilters();
-    initializeCatalogSorting();
-    loadSopCatalog();
-    loadMyDrafts();
-    document.querySelectorAll('[data-section="sop-drafts"]').forEach(button => button.addEventListener("click", loadMyDrafts));
 
+    loadSopCatalog();
+
+    // SOP details section
     function openSopModal() {
         document.getElementById("sop-modal").classList.remove("hidden");
     }
     function closeSopModal() {
         document.getElementById("sop-modal").classList.add("hidden");
     }
+
     document.getElementById("sop-modal-close").addEventListener("click", closeSopModal);
     document.getElementById("sop-modal-close-footer").addEventListener("click", closeSopModal);
     document.querySelector(".sop-modal-overlay").addEventListener("click", closeSopModal);
@@ -946,228 +1558,383 @@ async function initializeSopPage() {
         }
     });
 
-    async function viewSop(sopId) {
-        const modalBody = document.querySelector(".sop-modal-body");
-        modalBody.innerHTML = "<p>Loading...</p>";
-        openSopModal();
-        const { data, error } = await supabaseClient
-            .from("sop_documents")
-            .select(`
-                id,
-                sop_code,
-                part_number,
-                operation_name,
-                created_at,
-                workshops (
-                    name,
-                    code
-                ),
-                process_areas (
-                    name,
-                    code
-                ),
-                models (
-                    name,
-                    model_series (
-                        name,
-                        code
-                    )
-                ),
-                part_names (
-                    name,
-                    code
-                ),
-                sop_revisions (
-                    id,
-                    revision_number,
-                    revision_code,
-                    description,
-                    status,
-                    created_at,
-                    released_at
-                )
-            `)
-            .eq("id", sopId)
-            .single();
-        if (error) {
-            console.error("Error loading SOP:", error);
-            modalBody.innerHTML = "<p>Error loading SOP information.</p>";
-            return;
-        }
-        renderSopModal(data);
-        document.getElementById("sop-modal").dataset.sop = JSON.stringify(data);
-        // Workflow history is shown separately in SOP Workflow Review.
-    }
-
-    async function renderSopWorkflowHistory(sopId) {
-        const modalBody = document.querySelector(".sop-modal-body");
-        try {
-            const { data: instances, error: instanceError } = await supabaseClient
-                .from("workflow_instances").select("id,status,started_at,completed_at")
-                .eq("source_document_id", Number(sopId)).order("started_at", { ascending: false });
-            if (instanceError) throw instanceError;
-            const instanceIds = (instances || []).map(item => item.id);
-            let history = [];
-            if (instanceIds.length) {
-                const { data, error } = await supabaseClient.from("workflow_history")
-                    .select("instance_id,task_id,event_type,from_status,to_status,created_at,details")
-                    .in("instance_id", instanceIds).order("created_at", { ascending: true });
-                if (error) throw error;
-                history = data || [];
-            }
-            const taskIds = [...new Set(history.map(item => item.task_id).filter(Boolean))];
-            let taskNodeMap = new Map();
-            if (taskIds.length) {
-                const { data: tasks, error: taskError } = await supabaseClient.from("workflow_tasks").select("id,node_id").in("id", taskIds);
-                if (taskError) throw taskError;
-                const nodeIds = [...new Set((tasks || []).map(task => task.node_id).filter(Boolean))];
-                const { data: nodes, error: nodeError } = nodeIds.length ? await supabaseClient.from("workflow_nodes").select("id,label,node_type").in("id", nodeIds) : { data: [], error: null };
-                if (nodeError) throw nodeError;
-                const nodeMap = new Map((nodes || []).map(node => [String(node.id), node]));
-                taskNodeMap = new Map((tasks || []).map(task => [String(task.id), nodeMap.get(String(task.node_id)) || {}]));
-            }
-            const events = history.map(item => {
-                const node = taskNodeMap.get(String(item.task_id)) || {};
-                const raw = [node.label, item.event_type, item.to_status].filter(Boolean).join(" ").toLowerCase().replace(/[_-]+/g, " ");
-                const label = raw.includes("validat") ? "Validated" : raw.includes("reject") ? "Rejected" : raw.includes("approv") ? "Approved" : raw.includes("complet") || raw.includes("finish") || raw.includes("release") ? "Completed" : raw.replace(/\b\w/g, char => char.toUpperCase());
-                return { label: label || "Workflow update", date: item.created_at, details: item.details || {} };
-            });
-            (instances || []).forEach(item => {
-                const status = String(item.status || "").toLowerCase();
-                if (status === "completed" || status === "rejected") events.push({
-                    label: status === "completed" ? "Completed" : "Rejected",
-                    date: item.completed_at || item.started_at,
-                    details: {}
-                });
-            });
-            const uniqueEvents = [...new Map(events.map(item => [String(item.label)+"|"+String(item.date), item])).values()]
-                .sort((a,b) => new Date(a.date || 0) - new Date(b.date || 0));
-            const section = document.createElement("section");
-            section.className = "sop-workflow-detail";
-            section.innerHTML = '<h3>Workflow History</h3>';
-            if (!uniqueEvents.length) {
-                section.insertAdjacentHTML("beforeend", '<p>No validation, rejection, or completion events recorded yet.</p>');
-            } else {
-                const list = document.createElement("ol");
-                list.className = "workflow-history-list";
-                uniqueEvents.forEach(item => {
-                    const li = document.createElement("li");
-                    const title = document.createElement("strong");
-                    title.textContent = item.label || "Workflow update";
-                    li.appendChild(title);
-                    if (item.date) {
-                        const date = document.createElement("small");
-                        date.textContent = " · " + formatDate(item.date);
-                        li.appendChild(date);
-                    }
-                    const comment = item.details?.comments || item.details?.comment || item.details?.reason;
-                    if (comment) {
-                        const p = document.createElement("p");
-                        p.textContent = String(comment);
-                        li.appendChild(p);
-                    }
-                    list.appendChild(li);
-                });
-                section.appendChild(list);
-            }
-            modalBody.appendChild(section);
-        } catch (error) {
-            console.warn("Unable to load SOP workflow history:", error);
-            const section = document.createElement("section");
-            section.className = "sop-workflow-detail";
-            section.innerHTML = '<h3>Workflow History</h3><p>Workflow history is unavailable for this SOP.</p>';
-            modalBody.appendChild(section);
-        }
-    }
-
-
     function renderSopModal(sop) {
         const modalBody = document.querySelector("#sop-modal .sop-modal-body");
-        const revisions = [...(sop.sop_revisions || [])].sort((a,b)=>(Number(b.revision_number)||0)-(Number(a.revision_number)||0));
-        const releasedRevision = revisions.find(revision => String(revision.status||"").toLowerCase()==="released");
+        const revisions = [...(sop.sop_revisions || [])].sort((a,b) => (Number(b.revision_number) || 0) - (Number(a.revision_number) || 0));
+        const releasedRevision = revisions.find(revision => String(revision.status || "").toLowerCase() === "released");
         const latestRevision = revisions[0];
-        const draftCandidate = latestRevision && String(latestRevision.status||"").toLowerCase()==="draft" && (!releasedRevision || Number(latestRevision.revision_number)>Number(releasedRevision.revision_number)) ? latestRevision : null;
+        const draftCandidate = 
+            latestRevision && 
+            String(latestRevision.status || "").toLowerCase() === "draft" && 
+            (!releasedRevision || Number(latestRevision.revision_number) > Number(releasedRevision.revision_number)) ? latestRevision 
+            : null;
         const currentRevision = releasedRevision || latestRevision;
-        const revisionHistoryHtml = revisions.length > 1 ? "<details class=\"sop-revision-history\"><summary>Revision History ("+revisions.length+")</summary><div class=\"sop-revision-history-list\">"+revisions.map(revision=>"<details class=\"sop-revision-history-item\"><summary><strong>"+renderRevisionBadge(revision.revision_code,revision.status)+"</strong><span class=\"status-badge status-"+statusKey(revision.status)+"\">"+escapeHtml(statusLabel(revision.status))+"</span><small>"+escapeHtml(formatDate(revision.released_at||revision.created_at))+"</small></summary><div class=\"sop-revision-history-details\"><p><strong>Change Summary</strong></p><p>"+escapeHtml(revision.description||"No change summary recorded.")+"</p><p><strong>Status:</strong> "+renderStatusBadge(revision.status)+"</p><p><strong>Created:</strong> "+escapeHtml(formatDate(revision.created_at))+"</p>"+(revision.released_at?"<p><strong>Released:</strong> "+escapeHtml(formatDate(revision.released_at))+"</p>":"")+"</div></details>").join("")+"</div></details>" : "";
-        const candidateHtml = draftCandidate && releasedRevision ? "<section class=\"sop-draft-candidate\"><h3>Revision in Progress · "+renderRevisionBadge(draftCandidate.revision_code,draftCandidate.status)+"</h3><p>"+escapeHtml(draftCandidate.description||"No change summary recorded.")+"</p><p>The released revision remains "+escapeHtml(releasedRevision.revision_code)+" until this candidate completes the workflow.</p><div class=\"sop-modal-actions\"><button type=\"button\" class=\"secondary-button edit-draft-button\" data-sop-id=\""+sop.id+"\">Edit Draft</button><button type=\"button\" class=\"danger-button discard-revision-button\" data-sop-id=\""+sop.id+"\" data-revision-id=\""+draftCandidate.id+"\" data-revision-code=\""+escapeHtml(draftCandidate.revision_code||"")+"\">Discard Revision</button><button type=\"button\" class=\"primary-button draft-submit-button\" data-sop-id=\""+sop.id+"\" data-revision-id=\""+draftCandidate.id+"\" data-sop-code=\""+escapeHtml(sop.sop_code||"Unassigned")+"\" data-revision-code=\""+escapeHtml(draftCandidate.revision_code||"")+"\">Submit for Validation</button></div></section>" : "";
-        const initialDraftActions = currentRevision && String(currentRevision.status||"").toLowerCase()==="draft" && !releasedRevision ? "<div class=\"sop-modal-actions\"><button type=\"button\" class=\"secondary-button edit-draft-button\" data-sop-id=\""+sop.id+"\">Edit Draft</button><button type=\"button\" class=\"danger-button delete-draft-button\" data-sop-id=\""+sop.id+"\">Delete Draft</button><button type=\"button\" class=\"primary-button draft-submit-button\" data-sop-id=\""+sop.id+"\" data-revision-id=\""+currentRevision.id+"\" data-sop-code=\""+escapeHtml(sop.sop_code||"Unassigned")+"\" data-revision-code=\""+escapeHtml(currentRevision.revision_code||"")+"\">Submit for Validation</button></div>" : "";
-        modalBody.innerHTML = revisionHistoryHtml+"<div class=\"sop-modal-grid\"><div class=\"sop-modal-field\"><span>SOP Code</span><strong>"+escapeHtml(sop.sop_code||"Unassigned")+"</strong></div><div class=\"sop-modal-field\"><span>Released Revision</span><strong>"+renderRevisionBadge(currentRevision?.revision_code,currentRevision?.status)+"</strong></div><div class=\"sop-modal-field\"><span>Workshop</span><strong>"+escapeHtml(sop.workshops?.name||"")+"</strong></div><div class=\"sop-modal-field\"><span>Process Area</span><strong>"+escapeHtml(sop.process_areas?.name||"")+"</strong></div><div class=\"sop-modal-field\"><span>Model Series</span><strong>"+escapeHtml(sop.models?.model_series?.name||"")+"</strong></div><div class=\"sop-modal-field\"><span>Model</span><strong>"+escapeHtml(sop.models?.name||"")+"</strong></div><div class=\"sop-modal-field\"><span>Part Name</span><strong>"+escapeHtml(sop.part_names?.name||"")+"</strong></div><div class=\"sop-modal-field\"><span>Part Number</span><strong>"+escapeHtml(sop.part_number||"")+"</strong></div><div class=\"sop-modal-field\"><span>Operation Name</span><strong>"+escapeHtml(sop.operation_name||"")+"</strong></div><div class=\"sop-modal-field\"><span>Status</span><strong>"+escapeHtml(currentRevision?.status||"")+"</strong></div><div class=\"sop-modal-field sop-modal-field-full\"><span>Description</span><p>"+escapeHtml(currentRevision?.description||"")+"</p></div>"+initialDraftActions+(String(currentRevision?.status||"").toLowerCase()==="released"?"<div class=\"sop-modal-actions\"><button type=\"button\" class=\"remark-button modal-revision-button\" data-sop-id=\""+sop.id+"\">Revision</button></div>":"")+"</div>"+candidateHtml;
+        const revisionHistoryHtml = revisions.length > 1 ? 
+            `<details class="sop-revision-history">
+                <summary>
+                    Revision History (${revisions.length})
+                </summary>
+                <div class="sop-revision-history-list>
+                ${revisions.map(revision => 
+                    `<details class="sop-revision-history-item">
+                        <summary>
+                            <strong> ${renderRevisionBadge(revision.revision_code, revision.status)} </strong>
+                            <span 
+                                class="status-badge 
+                                status-${statusKey(revision.status)}"> 
+                                ${escapeHtml(statusLabel(revision.status))}
+                            </span>
+                            <small>
+                                ${escapeHtml(formatDate(revision.released_at || revision.created_at))}
+                            </small>
+                        </summary>
+                        <div class="sop-revision-history-details">
+                            <p>
+                                <strong>
+                                    Change Summary
+                                </strong>
+                            </p>
+                            <p>
+                                ${escapeHtml(revision.description || "No change summary recorded.")}
+                            </p>
+                            <p>
+                                <strong>
+                                    Status: 
+                                </strong>
+                                ${renderStatusBadge(revision.status)} 
+                            </p>
+                            <p>
+                                <strong>
+                                    Created: 
+                                </strong>
+                                ${escapeHtml(formatDate(revision.created_at))} 
+                            </p>
+                            ${(revision.released_at? 
+                            `<p>
+                                <strong>
+                                    Released: 
+                                </strong>
+                                ${escapeHtml(formatDate(revision.released_at))}
+                            </p>`
+                            : "")}
+                        </div>
+                    </details>`
+                ).join("")}
+                </div>
+            </details>` 
+            : "";
+        const candidateHtml = draftCandidate && releasedRevision ? 
+            `<section class="sop-draft-candidate">
+                <h3>
+                    Revision in Progress · ${renderRevisionBadge(draftCandidate.revision_code, draftCandidate.status)}
+                </h3>
+                <p>
+                    ${escapeHtml(draftCandidate.description || "No change summary recorded.")}
+                </p>
+                <p>
+                    The released revision remains ${escapeHtml(releasedRevision.revision_code)} until this candidate completes the workflow.
+                </p>
+                <div class="sop-modal-actions">
+
+                    <button 
+                    type="button" 
+                    class="secondary-button 
+                    edit-draft-button" 
+                    data-sop-id="${sop.id}">
+                        Edit Draft
+                    </button>
+
+                    <button 
+                    type="button" 
+                    class="danger-button discard-revision-button" 
+                    data-sop-id="${sop.id}" 
+                    data-revision-id="${draftCandidate.id}" 
+                    data-revision-code="${escapeHtml(draftCandidate.revision_code || "")}">
+                        Discard Revision
+                    </button>
+
+                    <button 
+                    type="button" 
+                    class="primary-button draft-submit-button" 
+                    data-sop-id="${sop.id}" 
+                    data-revision-id="${draftCandidate.id}" 
+                    data-sop-code="${escapeHtml(sop.sop_code || "Unassigned")}" 
+                    data-revision-code="${escapeHtml(draftCandidate.revision_code||"")}">
+                        Submit for Validation
+                    </button>
+
+                </div>
+            </section>` 
+            : "";
+        const initialDraftActions = 
+            currentRevision && 
+            String(currentRevision.status || "").toLowerCase() === "draft" && 
+            !releasedRevision ? 
+            `<div class="sop-modal-actions">
+
+                <button 
+                type="button" 
+                class="secondary-button edit-draft-button" 
+                data-sop-id="${sop.id}">
+                    Edit Draft
+                </button>
+
+                <button 
+                type="button" 
+                class="danger-button delete-draft-button" 
+                data-sop-id="${sop.id}">
+                    Delete Draft
+                </button>
+
+                <button 
+                type="button" 
+                class="primary-button draft-submit-button" 
+                data-sop-id="${sop.id}" 
+                data-revision-id="${currentRevision.id}" 
+                data-sop-code="${escapeHtml(sop.sop_code || "Unassigned")}" 
+                data-revision-code="${escapeHtml(currentRevision.revision_code || "")}">
+                    Submit for Validation
+                </button>
+
+            </div>` 
+            : "";
+
+        modalBody.innerHTML = 
+            revisionHistoryHtml +
+            `<div class="sop-modal-grid">
+                <div class="sop-modal-field">
+                    <span>
+                        SOP Code
+                    </span>
+                    <strong>
+                        ${escapeHtml(sop.sop_code || "Unassigned")}
+                    </strong>
+                </div>
+                <div class="sop-modal-field">
+                    <span>
+                        Released Revision
+                    </span>
+                    <strong>
+                        ${renderRevisionBadge(currentRevision?.revision_code,currentRevision?.status)}
+                    </strong>
+                </div>
+                <div class="sop-modal-field">
+                    <span>
+                        Workshop
+                    </span>
+                    <strong>
+                        ${escapeHtml(sop.workshops?.name || "")}
+                    </strong>
+                </div>
+                <div class="sop-modal-field">
+                    <span>
+                        Process Area
+                    </span>
+                    <strong>
+                        ${escapeHtml(sop.process_areas?.name || "")}
+                    </strong>
+                </div>
+                <div class="sop-modal-field">
+                    <span>
+                        Model Series
+                    </span>
+                    <strong>
+                        ${escapeHtml(sop.models?.model_series?.name || "")}
+                    </strong>
+                </div>
+                <div class="sop-modal-field">
+                    <span>
+                        Model
+                    </span>
+                    <strong>
+                        ${escapeHtml(sop.models?.size_model || "")}
+                    </strong>
+                </div>
+                <div class="sop-modal-field">
+                    <span>
+                        Part Name
+                    </span>
+                    <strong>
+                        ${escapeHtml(sop.part_names?.name || "")}
+                    </strong>
+                </div>
+                <div class="sop-modal-field">
+                    <span>
+                        Part Number
+                    </span>
+                    <strong>
+                        ${escapeHtml(sop.part_number || "")}
+                    </strong>
+                </div>
+                <div class="sop-modal-field">
+                    <span>
+                        Operation Name
+                    </span>
+                    <strong>
+                        ${escapeHtml(sop.operation_name || "")}
+                    </strong>
+                </div>
+                <div class="sop-modal-field">
+                    <span>
+                        Status
+                    </span>
+                    <strong>
+                        ${escapeHtml(currentRevision?.status || "")}
+                    </strong>
+                </div>
+                <div class="sop-modal-field sop-modal-field-full">
+                    <span>
+                        Description
+                    </span>
+                    <p>
+                        ${escapeHtml(currentRevision?.description || "")}
+                    </p>
+                </div>
+                ${initialDraftActions + (String(currentRevision?.status || "").toLowerCase() === "released"?
+                `<div class="sop-modal-actions">
+                    <button 
+                    type="button" 
+                    class="remark-button modal-revision-button" 
+                    data-sop-id="${sop.id}">
+                        Revision
+                    </button>
+                </div>`
+                :"")}
+            </div>` 
+            + candidateHtml;
     }
     function openRevisionModal(sop) {
         const modalBody = document.querySelector(".sop-modal-body");
         const revisions = sop.sop_revisions || [];
-        const currentRevision = revisions
-            .sort((a, b) => b.revision_number - a.revision_number)[0];
+        const currentRevision = revisions.sort((a, b) => b.revision_number - a.revision_number)[0];
         const currentRevisionNumber = currentRevision?.revision_number ?? 0;
         const nextRevisionNumber = currentRevisionNumber + 1;
         const currentRevisionCode = currentRevision?.revision_code || `R${String(currentRevisionNumber).padStart(2, "0")}`;
         const nextRevisionCode = `R${String(nextRevisionNumber).padStart(2, "0")}`;
-        modalBody.innerHTML = `
-            <div class="sop-revision-header">
-                <h3>Revision Information</h3>
-                <p>Create a new revision for this SOP.</p>
+        modalBody.innerHTML = 
+            `<div class="sop-revision-header">
+                <h3>
+                    Revision Information
+                </h3>
+                <p>
+                    Create a new revision for this SOP.
+                </p>
             </div>
             <div class="sop-modal-grid">
                 <div class="sop-modal-field">
-                    <span>SOP Code</span>
-                    <strong>${sop.sop_code}</strong>
+                    <span>
+                        SOP Code
+                    </span>
+                    <strong>
+                        ${sop.sop_code}
+                    </strong>
                 </div>
                 <div class="sop-modal-field">
-                    <span>Current Revision</span>
-                    <strong>${currentRevisionCode}</strong>
+                    <span>
+                        Current Revision
+                    </span>
+                    <strong>
+                        ${currentRevisionCode}
+                    </strong>
                 </div>
                 <div class="sop-modal-field">
-                    <span>New Revision</span>
-                    <strong>${nextRevisionCode}</strong>
+                    <span>
+                        New Revision
+                    </span>
+                    <strong>
+                        ${nextRevisionCode}
+                    </strong>
                 </div>
                 <div class="sop-modal-field">
-                    <span>Workshop</span>
-                    <strong>${sop.workshops?.name || ""}</strong>
+                    <span>
+                        Workshop
+                    </span>
+                    <strong>
+                        ${sop.workshops?.name || ""}
+                    </strong>
                 </div>
                 <div class="sop-modal-field">
-                    <span>Process Area</span>
-                    <strong>${sop.process_areas?.name || ""}</strong>
+                    <span>
+                        Process Area
+                    </span>
+                    <strong>
+                        ${sop.process_areas?.name || ""}
+                    </strong>
                 </div>
                 <div class="sop-modal-field">
-                    <span>Model Series</span>
-                    <strong>${sop.models?.model_series?.name || ""}</strong>
+                    <span>
+                        Model Series
+                    </span>
+                    <strong>
+                        ${sop.models?.model_series?.name || ""}
+                    </strong>
                 </div>
                 <div class="sop-modal-field">
-                    <span>Model</span>
-                    <strong>${sop.models?.name || ""}</strong>
+                    <span>
+                        Model
+                    </span>
+                    <strong>
+                        ${sop.models?.name || ""}
+                    </strong>
                 </div>
                 <div class="sop-modal-field">
-                    <span>Part Name</span>
-                    <strong>${sop.part_names?.name || ""}</strong>
+                    <span>
+                        Part Name
+                    </span>
+                    <strong>
+                        ${sop.part_names?.name || ""}
+                    </strong>
                 </div>
                 <div class="sop-modal-field">
-                    <span>Part Number</span>
-                    <strong>${sop.part_number || ""}</strong>
+                    <span>
+                        Part Number
+                    </span>
+                    <strong>
+                        ${sop.part_number || ""}
+                    </strong>
                 </div>
                 <div class="sop-modal-field">
-                    <span>Operation Name</span>
-                    <strong>${sop.operation_name || ""}</strong>
+                    <span>
+                        Operation Name
+                    </span>
+                    <strong>
+                        ${sop.operation_name || ""}
+                    </strong>
                 </div>
             </div>
             <div class="sop-revision-section">
-                <label for="revision-change-summary">Change Summary</label>
+                <label for="revision-change-summary">
+                    Change Summary
+                </label>
                 <textarea id="revision-change-summary" rows="5" placeholder="Describe what changed in this revision."></textarea>
             </div>
             <div class="sop-revision-section">
-                <label for="revision-file">New SOP File</label>
+                <label for="revision-file">
+                    New SOP File
+                </label>
                 <input type="file" id="revision-file" accept=".pdf,.xlsx,.xls,.docx,.doc">
-                <small>Upload the updated SOP document.</small>
+                <small>
+                    Upload the updated SOP document.
+                </small>
             </div>
             <div class="sop-modal-actions">
-                <button type="button" class="secondary-button" id="revision-cancel-button">Cancel</button>
-                <button type="button" class="primary-button" id="create-revision-button" data-sop-id="${sop.id}">
+                <button 
+                type="button" 
+                class="secondary-button" 
+                id="revision-cancel-button">
+                    Cancel
+                </button>
+
+                <button 
+                type="button" 
+                class="primary-button" 
+                id="create-revision-button" 
+                data-sop-id="${sop.id}">
                     Create Revision
                 </button>
-            </div>
-        `;
+
+            </div>`;
     }
-
-
 
     document.addEventListener("click", async event => {
         const viewButton = event.target.closest(".view-sop-button");
@@ -1252,4 +2019,121 @@ async function initializeSopPage() {
         }
     });
 
+    // Revision SOP section
+    function getNextRevision(revision) {
+        if (!revision) {
+            return "R01";
+        }
+        const number = parseInt(revision.replace("R", ""), 10);
+        if (Number.isNaN(number)) {
+            return "R01";
+        }
+        return `R${String(number + 1).padStart(2, "0")}`;
+    }
+    function setRevisionMode(sop) {
+        sopMode.value = "revision";
+        sopId.value = sop.id;
+        editorTitle.textContent = "SOP Revision";
+        editorDescription.textContent = "Create a new revision of an existing SOP.";
+        revisionInfo.classList.remove("hidden");
+        revisionSopCode.value = sop.sopCode;
+        revisionCurrent.value = sop.currentRevision;
+        revisionNew.value = getNextRevision(sop.currentRevision);
+        descriptionTitle.textContent = "Change Summary";
+        if (descriptionLabel) {
+            descriptionLabel.textContent = "Change Summary";
+        }
+        descriptionInput.placeholder = "Describe what changed in this revision.";
+        fileInput.value = "";
+        document.getElementById("sop-workshop").value = sop.workshopId;
+        document.getElementById("sop-process").value = sop.processAreaId;
+        document.getElementById("sop-model-series").value = sop.modelSeriesId;
+        document.getElementById("sop-model").value = sop.modelId;
+        document.getElementById("sop-part-name").value = sop.partNameId;
+        document.getElementById("sop-part-number").value = sop.partNumber || "";
+        document.getElementById("sop-operation").value = sop.operationName || "";
+        descriptionInput.value = "";
+        setFormEditable(false);
+    }
+
+    async function renderSopWorkflowHistory(sopId) {
+        const modalBody = document.querySelector(".sop-modal-body");
+        try {
+            const { data: instances, error: instanceError } = await supabaseClient
+                .from("workflow_instances").select("id,status,started_at,completed_at")
+                .eq("source_document_id", Number(sopId)).order("started_at", { ascending: false });
+            if (instanceError) throw instanceError;
+            const instanceIds = (instances || []).map(item => item.id);
+            let history = [];
+            if (instanceIds.length) {
+                const { data, error } = await supabaseClient.from("workflow_history")
+                    .select("instance_id,task_id,event_type,from_status,to_status,created_at,details")
+                    .in("instance_id", instanceIds).order("created_at", { ascending: true });
+                if (error) throw error;
+                history = data || [];
+            }
+            const taskIds = [...new Set(history.map(item => item.task_id).filter(Boolean))];
+            let taskNodeMap = new Map();
+            if (taskIds.length) {
+                const { data: tasks, error: taskError } = await supabaseClient.from("workflow_tasks").select("id,node_id").in("id", taskIds);
+                if (taskError) throw taskError;
+                const nodeIds = [...new Set((tasks || []).map(task => task.node_id).filter(Boolean))];
+                const { data: nodes, error: nodeError } = nodeIds.length ? await supabaseClient.from("workflow_nodes").select("id,label,node_type").in("id", nodeIds) : { data: [], error: null };
+                if (nodeError) throw nodeError;
+                const nodeMap = new Map((nodes || []).map(node => [String(node.id), node]));
+                taskNodeMap = new Map((tasks || []).map(task => [String(task.id), nodeMap.get(String(task.node_id)) || {}]));
+            }
+            const events = history.map(item => {
+                const node = taskNodeMap.get(String(item.task_id)) || {};
+                const raw = [node.label, item.event_type, item.to_status].filter(Boolean).join(" ").toLowerCase().replace(/[_-]+/g, " ");
+                const label = raw.includes("validat") ? "Validated" : raw.includes("reject") ? "Rejected" : raw.includes("approv") ? "Approved" : raw.includes("complet") || raw.includes("finish") || raw.includes("release") ? "Completed" : raw.replace(/\b\w/g, char => char.toUpperCase());
+                return { label: label || "Workflow update", date: item.created_at, details: item.details || {} };
+            });
+            (instances || []).forEach(item => {
+                const status = String(item.status || "").toLowerCase();
+                if (status === "completed" || status === "rejected") events.push({
+                    label: status === "completed" ? "Completed" : "Rejected",
+                    date: item.completed_at || item.started_at,
+                    details: {}
+                });
+            });
+            const uniqueEvents = [...new Map(events.map(item => [String(item.label)+"|"+String(item.date), item])).values()]
+                .sort((a,b) => new Date(a.date || 0) - new Date(b.date || 0));
+            const section = document.createElement("section");
+            section.className = "sop-workflow-detail";
+            section.innerHTML = '<h3>Workflow History</h3>';
+            if (!uniqueEvents.length) {
+                section.insertAdjacentHTML("beforeend", '<p>No validation, rejection, or completion events recorded yet.</p>');
+            } else {
+                const list = document.createElement("ol");
+                list.className = "workflow-history-list";
+                uniqueEvents.forEach(item => {
+                    const li = document.createElement("li");
+                    const title = document.createElement("strong");
+                    title.textContent = item.label || "Workflow update";
+                    li.appendChild(title);
+                    if (item.date) {
+                        const date = document.createElement("small");
+                        date.textContent = " · " + formatDate(item.date);
+                        li.appendChild(date);
+                    }
+                    const comment = item.details?.comments || item.details?.comment || item.details?.reason;
+                    if (comment) {
+                        const p = document.createElement("p");
+                        p.textContent = String(comment);
+                        li.appendChild(p);
+                    }
+                    list.appendChild(li);
+                });
+                section.appendChild(list);
+            }
+            modalBody.appendChild(section);
+        } catch (error) {
+            console.warn("Unable to load SOP workflow history:", error);
+            const section = document.createElement("section");
+            section.className = "sop-workflow-detail";
+            section.innerHTML = '<h3>Workflow History</h3><p>Workflow history is unavailable for this SOP.</p>';
+            modalBody.appendChild(section);
+        }
+    }
 }

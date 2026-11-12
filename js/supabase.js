@@ -12,6 +12,7 @@ let currentUserRole = null;
 let currentUserPermissions = [];
 let currentPermissionCodes = new Set();
 let authContextPromise = null;
+let authContextInitialized = false;
 
 async function loadCurrentUserContext(user) {
     if (!user) {
@@ -124,6 +125,19 @@ async function loadCurrentUserContext(user) {
 }
 
 async function initializeSupabaseAuth() {
+    if (authContextInitialized) {
+        return currentUser
+            ? {
+                user: currentUser,
+                profile: currentUserProfile,
+                role: currentUserRole.name,
+                roleCode: currentUserRole.code,
+                roleData: currentUserRole,
+                permissions: currentUserPermissions
+            }
+            : null;
+    }
+
     if (authContextPromise) {
         return authContextPromise;
     }
@@ -134,24 +148,26 @@ async function initializeSupabaseAuth() {
         if (error) {
             console.error("Error getting session:", error);
             clearAuthContext();
+            authContextInitialized = true;
             return null;
         }
 
         const user = data.session?.user ?? null;
 
-        if (!user) {
-            clearAuthContext();
-            return null;
-        }
+        const result = user
+            ? await loadCurrentUserContext(user)
+            : null;
 
-        return await loadCurrentUserContext(user);
+        authContextInitialized = true;
+
+        return result;
     })();
 
-    const result = await authContextPromise;
-
-    authContextPromise = null;
-
-    return result;
+    try {
+        return await authContextPromise;
+    } finally {
+        authContextPromise = null;
+    }
 }
 
 function hasPermission(permissionCode) {
@@ -177,6 +193,7 @@ function clearAuthContext() {
     currentUserPermissions = [];
     currentPermissionCodes = new Set();
     authContextPromise = null;
+    authContextInitialized = false;
 }
 
 async function signOutUser() {
