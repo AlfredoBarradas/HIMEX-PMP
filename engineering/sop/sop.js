@@ -864,9 +864,8 @@ async function initializeSopPage() {
                     part_number,
                     operation_name,
                     created_by,
-                    models(
-                        size_model
-                    ),
+                    models(model_series),
+                    part_names(id),
                     sop_revisions(
                         id,
                         revision_number,
@@ -886,21 +885,24 @@ async function initializeSopPage() {
             if (!revision) {
                 throw new Error("This SOP has no editable Draft revision.");
             }
+            
+            const seriesModel = sop.models?.model_series;
             await loadWorkshops();
-            document.getElementById("sop-workshop").value = String(sop.workshop_id);
-            await loadProcessAreas(sop.workshop_id);
-            document.getElementById("sop-process").value = String(sop.process_area_id);
-            await loadPartNames(sop.workshop_id);
-            document.getElementById("sop-part-name").value = String(sop.part_name_id);
             await loadModelSeries();
-            const seriesId = sop.models?.model_series_id;
-            document.getElementById("sop-model-series").value = String(seriesId || "");
-            await loadModels(seriesId);
-            document.getElementById("sop-model").value = String(sop.model_id);
+            await loadProcessAreas(sop.workshop);
+            await loadModels(seriesModel);
+            await loadPartNames(sop.workshop);
+            
+            document.getElementById("sop-workshop").value = String(sop.workshop);
+            document.getElementById("sop-process").value = String(sop.process_area);
+            document.getElementById("sop-model-series").value = String(seriesModel || "");
+            document.getElementById("sop-model").value = String(sop.model);
+            document.getElementById("sop-part-name").value = String(sop.part_names?.id);
             document.getElementById("sop-part-number").value = sop.part_number || "";
             document.getElementById("sop-operation").value = sop.operation_name || "";
             document.getElementById("sop-description").value = revision.description || "";
             document.getElementById("sop-file").value = "";
+
             sopMode.value = "edit";
             sopId.value = String(sop.id);
             editingRevisionId = revision.id;
@@ -1052,7 +1054,7 @@ async function initializeSopPage() {
                     workshops(name),
                     process_areas(name),
                     models(size_model),
-                    part_names(part_name)
+                    part_names(code)
                 `)
                 .in("id", docIds) 
 
@@ -1163,7 +1165,7 @@ async function initializeSopPage() {
                     <td>` + escapeHtml(doc.workshops?.name || "") + `</td>
                     <td>` + escapeHtml(doc.process_areas?.name || "") + `</td>
                     <td>` + escapeHtml(doc.models?.size_model || "") + `</td>
-                    <td>` + escapeHtml(doc.part_names?.part_name || "") + `</td>
+                    <td>` + escapeHtml(doc.part_names?.code || "") + `</td>
                     <td>` + escapeHtml(doc.part_number || "") + `</td>
                     <td>` + escapeHtml(doc.operation_name || "") + `</td>
                     <td>` + renderRevisionBadge(revision.revision_code, revision.status) + `</td>
