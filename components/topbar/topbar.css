@@ -2,63 +2,443 @@
    TOPBAR
    ========================================= */
 
-.topbar {
-    height: 80px;
-    background-color: #009A9D;
-    border-bottom: 1px solid #dfe3e6;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 30px;
-    color: #ffffff;
-}
-
 #topbar-container {
     position: sticky;
     top: 0;
-    z-index: 100;
+    z-index: 300;
 }
 
-.topbar-title h2 {
+.topbar {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+
+    padding: 0 24px;
+    background: #123746;
+    border-bottom: 1px solid #244C5B;
+    color: #FFFFFF;
+}
+
+/* =========================================
+   MAIN ROW
+   ========================================= */
+
+.topbar-main-row {
+    width: 100%;
+    min-height: 88px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+
+    border-bottom: 1px solid #315866;
+}
+
+.topbar-leading {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+
+    flex: 1;
+    min-width: 0;
+}
+
+/* =========================================
+   MENU BUTTON
+   ========================================= */
+
+.sidebar-toggle {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+
+    padding: 10px;
+    border: 1px solid #315866;
+    border-radius: 8px;
+
+    background: transparent;
+    cursor: pointer;
+
+    transition:
+        background-color 160ms ease,
+        border-color 160ms ease;
+}
+
+.sidebar-toggle span {
+    display: block;
+    width: 20px;
+    height: 2px;
+
+    border-radius: 2px;
+    background: #FFFFFF;
+
+    transition:
+        transform 160ms ease,
+        opacity 160ms ease;
+}
+
+.sidebar-toggle:hover,
+.sidebar-toggle:focus-visible {
+    background: rgba(163, 222, 218, 0.16);
+    border-color: #A3DEDA;
+    outline: none;
+}
+
+/* Hamburger to X */
+
+body.sidebar-open .sidebar-toggle span:first-child {
+    transform: translateY(7px) rotate(45deg);
+}
+
+body.sidebar-open .sidebar-toggle span:nth-child(2) {
+    opacity: 0;
+}
+
+body.sidebar-open .sidebar-toggle span:last-child {
+    transform: translateY(-7px) rotate(-45deg);
+}
+
+/* =========================================
+   CORPORATE BRAND
+   ========================================= */
+
+.topbar-brand,
+.topbar-brand:visited {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+
+    flex: 0 0 auto;
+    color: #FFFFFF;
+    text-decoration: none;
+}
+
+.topbar-brand:hover,
+.topbar-brand:active {
+    color: #FFFFFF;
+    text-decoration: none;
+}
+
+.brand-logo {
+    width: 60px;
+    height: 60px;
+    flex: 0 0 60px;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 15px;
+    background: #00AAA6;
+    color: #FFFFFF;
+
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+}
+
+.brand-text {
+    min-width: 0;
+}
+
+.brand-text h1 {
     margin: 0;
+
+    color: #FFFFFF;
+    font-size: 25px;
+    line-height: 1.15;
+    font-weight: 800;
+    white-space: nowrap;
 }
 
+.brand-text p {
+    margin: 5px 0 0;
+
+    color: #C5D8DF;
+    font-size: 14px;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+/* =========================================
+   PAGE TITLE
+   ========================================= */
+
+.topbar-page-title {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+
+    min-width: 0;
+    margin-left: 8px;
+}
+
+.topbar-page-title h2 {
+    margin: 0;
+
+    color: #FFFFFF;
+    font-size: 19px;
+    line-height: 1.2;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+#page-description {
+    margin: 4px 0 0;
+
+    color: #C5D8DF;
+    font-size: 12px;
+    line-height: 1.3;
+}
+
+/* =========================================
+   USER MENU
+   ========================================= */
+
+.topbar-right {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 0 0 auto;
+}
 
 .user-menu {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 12px;
 }
 
-
 .user-menu button {
-    border: none;
-    background: none;
     padding: 8px;
+
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: #FFFFFF;
+
     cursor: pointer;
 }
 
+.user-menu button:hover {
+    background: rgba(163, 222, 218, 0.16);
+}
 
 .user-info {
     display: flex;
     flex-direction: column;
+    gap: 3px;
+
+    white-space: nowrap;
 }
 
+.user-info strong {
+    color: #FFFFFF;
+    font-size: 13px;
+}
 
 .user-info span {
+    color: #C5D8DF;
     font-size: 12px;
-    color: #e9e9e9;
 }
 
+/* =========================================
+   BREADCRUMB
+   ========================================= */
 
+.breadcrumb {
+    width: 100%;
+    min-height: 42px;
 
-#page-description {
-    margin: 2px 0 0;
-    font-size: 12px;
-    line-height: 1.25;
-    color: #e9f7f7;
-    font-weight: 400;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    overflow: hidden;
+
+    font-size: 13px;
+    white-space: nowrap;
 }
-.topbar-title h2 {
-    line-height: 1.1;
+
+.breadcrumb a,
+.breadcrumb a:visited {
+    flex-shrink: 0;
+    color: #C5D8DF;
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    color: #A3DEDA;
+}
+
+.breadcrumb .separator {
+    flex-shrink: 0;
+    color: #00AAA6;
+    font-size: 18px;
+}
+
+.breadcrumb .current {
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    color: #FFFFFF;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+/* =========================================
+   TABLET
+   ========================================= */
+
+@media (max-width: 1200px) {
+    .topbar {
+        padding-right: 16px;
+        padding-left: 16px;
+    }
+
+    .topbar-main-row {
+        gap: 16px;
+    }
+
+    .topbar-leading {
+        gap: 12px;
+    }
+
+    .brand-logo {
+        width: 52px;
+        height: 52px;
+        flex-basis: 52px;
+        border-radius: 13px;
+        font-size: 18px;
+    }
+
+    .brand-text h1 {
+        font-size: 21px;
+    }
+
+    .brand-text p {
+        font-size: 12px;
+    }
+
+    .topbar-page-title h2 {
+        font-size: 16px;
+    }
+}
+
+/* =========================================
+   SMALL TABLET
+   ========================================= */
+
+@media (max-width: 900px) {
+    .topbar-main-row {
+        min-height: 68px;
+        gap: 12px;
+    }
+
+    .topbar-page-title {
+        display: none;
+    }
+
+    .brand-logo {
+        width: 48px;
+        height: 48px;
+        flex-basis: 48px;
+        border-radius: 12px;
+        font-size: 17px;
+    }
+
+    .brand-text h1 {
+        font-size: 19px;
+    }
+
+    .brand-text p {
+        font-size: 11px;
+    }
+
+    .user-menu {
+        gap: 6px;
+    }
+}
+
+/* =========================================
+   MOBILE
+   ========================================= */
+
+@media (max-width: 520px) {
+    .topbar {
+        padding-right: 10px;
+        padding-left: 10px;
+    }
+
+    .topbar-main-row {
+        gap: 8px;
+    }
+
+    .topbar-leading {
+        gap: 9px;
+    }
+
+    .sidebar-toggle {
+        width: 38px;
+        height: 38px;
+        flex-basis: 38px;
+        padding: 8px;
+    }
+
+    .topbar-brand {
+        gap: 9px;
+    }
+
+    .brand-logo {
+        width: 42px;
+        height: 42px;
+        flex-basis: 42px;
+        border-radius: 11px;
+        font-size: 15px;
+    }
+
+    .brand-text h1 {
+        font-size: 16px;
+    }
+
+    .brand-text p {
+        font-size: 10px;
+    }
+
+    .user-menu {
+        gap: 2px;
+    }
+
+    #language-button,
+    .user-info {
+        display: none;
+    }
+
+    .user-menu button {
+        padding: 6px;
+    }
+
+    .breadcrumb {
+        min-height: 38px;
+        gap: 7px;
+        font-size: 11px;
+    }
+}
+
+/* =========================================
+   ACCESSIBILITY
+   ========================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .sidebar-toggle,
+    .sidebar-toggle span {
+        transition: none;
+    }
 }

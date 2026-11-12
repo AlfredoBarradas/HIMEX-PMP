@@ -1,13 +1,56 @@
 <header class="topbar">
-    <div class="topbar-title">
-        <h2 id="page-title"></h2>
-    </div>
-    <div class="user-menu">
-        <button type="button" id="language-button">🌐 EN</button>
-        <button type="button" id="notifications-button">🔔</button>
-        <div class="user-info">
-            <strong id="current-user-name"></strong>
-            <span id="current-user-role"></span>
+
+    <!-- Primera fila: marca, página y usuario -->
+    <div class="topbar-main-row">
+
+        <div class="topbar-leading">
+
+            <button type="button" id="sidebar-toggle" class="sidebar-toggle" aria-label="Abrir menú"
+                aria-controls="sidebar-container" aria-expanded="false">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+
+            <a href="/" class="topbar-brand">
+                <div class="brand-logo">PMP</div>
+            </a>
+            <div class="brand-text">
+                <h1>Management Center</h1>
+                <p>Himex Plastic and Metal Parts</p>
+            </div>
+
+            <div class="topbar-page-title">
+                <h2 id="page-title"></h2>
+                <p id="page-description"></p>
+            </div>
+
         </div>
+
+        <div class="topbar-right">
+
+            <div class="user-menu">
+
+                <button type="button" id="language-button">
+                    🌐 EN
+                </button>
+
+                <button type="button" id="notifications-button" aria-label="Notifications">
+                    🔔
+                </button>
+
+                <div class="user-info">
+                    <strong id="current-user-name"></strong>
+                    <span id="current-user-role"></span>
+                </div>
+
+            </div>
+
+        </div>
+
     </div>
+
+    <!-- Segunda fila: ruta de navegación -->
+    <nav id="breadcrumb" class="breadcrumb" aria-label="Breadcrumb"></nav>
+
 </header>
