@@ -529,7 +529,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                                             <textarea id='workflow-task-comment' rows='3' placeholder='Enter review comments or required corrections'></textarea>
                                         </div>
                                         <div class='sop-modal-actions'>
-                                            <button type='button' class='secondary-button' id='workflow-return-to-draft' data-task-id='"` + escapeText(pendingTask.id)+`'>
+                                            <button type='button' class='secondary-button' id='workflow-return-to-draft' data-task-id='` + escapeText(pendingTask.id)+`'>
                                                 Return to Draft
                                             </button>
                                             <button type='button' class='danger-button' id='workflow-reject-task' data-task-id='` + escapeText(pendingTask.id)+`'>

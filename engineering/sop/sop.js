@@ -177,7 +177,7 @@ async function initializeSopPage() {
                     created_by,
                     workshops(name),
                     process_areas(name),
-                    models(model),
+                    models(size_model),
                     part_names(part_name)
                 `)
                 .in("id", docIds) 
@@ -286,7 +286,7 @@ async function initializeSopPage() {
                 escapeHtml(doc.sop_code || "Unassigned") + '</td><td>' + 
                 escapeHtml(doc.workshops?.name || "") + '</td><td>' + 
                 escapeHtml(doc.process_areas?.name || "") + '</td><td>' + 
-                escapeHtml(doc.models?.model || "") + '</td><td>' + 
+                escapeHtml(doc.models?.size_model || "") + '</td><td>' + 
                 escapeHtml(doc.part_names?.part_name || "") + '</td><td>' + 
                 escapeHtml(doc.part_number || "") + '</td><td>' + 
                 escapeHtml(doc.operation_name || "") + '</td><td>' + 
@@ -456,15 +456,15 @@ async function initializeSopPage() {
                 .from("sop_documents")
                 .select(`
                     id,
-                    workshop_id,
-                    process_area_id,
-                    model_id,
-                    part_name_id,
+                    workshop,
+                    process_area,
+                    model,
+                    part_name,
                     part_number,
                     operation_name,
                     created_by,
                     models(
-                        model_series_id
+                        size_model
                     ),
                     sop_revisions(
                         id,
@@ -478,9 +478,13 @@ async function initializeSopPage() {
                 `)
                 .eq("id", Number(draftSopId))
                 .single();
-            if (error) throw error;
+            if (error) {
+                throw error;
+            }
             const revision = (sop.sop_revisions || []).find(item => String(item.status || "").toLowerCase() === "draft" && String(item.created_by || sop.created_by) === String(userId));
-            if (!revision) throw new Error("This SOP has no editable Draft revision.");
+            if (!revision) {
+                throw new Error("This SOP has no editable Draft revision.");
+            }
             await loadWorkshops();
             document.getElementById("sop-workshop").value = String(sop.workshop_id);
             await loadProcessAreas(sop.workshop_id);
@@ -502,7 +506,9 @@ async function initializeSopPage() {
             editorTitle.textContent = "Edit Draft SOP";
             editorDescription.textContent = "Update the details of this draft before submitting it for validation.";
             descriptionTitle.textContent = "Description";
-            if (descriptionLabel) descriptionLabel.textContent = "Description";
+            if (descriptionLabel) {
+                descriptionLabel.textContent = "Description";
+            }
             revisionInfo.classList.add("hidden");
             setFormEditable(true);
             showSection("sop-create");
@@ -847,9 +853,13 @@ async function initializeSopPage() {
         try {
             if (sopMode.value === "revision") {
                 const { data: authResult, error: authError } = await supabaseClient.auth.getUser();
-                if (authError) throw authError;
+                if (authError) {
+                    throw authError;
+                }
                 const userId = authResult?.user?.id;
-                if (!userId) throw new Error("Please sign in again before creating a revision.");
+                if (!userId) {
+                    throw new Error("Please sign in again before creating a revision.");
+                }
                 const { data: revisionData, error: revisionCreateError } = await supabaseClient.rpc("create_sop_revision", {
                     p_sop_id: Number(sopId.value),
                     p_change_summary: description,
@@ -896,19 +906,23 @@ async function initializeSopPage() {
                 return;
             }
             if (sopMode.value === "edit") {
-                if (!editingRevisionId) throw new Error("Draft revision is missing. Reopen the draft and try again.");
+                if (!editingRevisionId) {
+                    throw new Error("Draft revision is missing. Reopen the draft and try again.");
+                }
                 const { data: updateResult, error: updateError } = await supabaseClient.rpc("update_sop_draft", {
                     p_sop_id: Number(sopId.value),
                     p_revision_id: Number(editingRevisionId),
-                    p_workshop_id: Number(workshopName),
-                    p_process_area_id: Number(processArea),
-                    p_model_id: Number(modelName),
-                    p_part_name_id: Number(partName),
+                    p_workshop: workshopName,
+                    p_process_area: processArea,
+                    p_model: modelName,
+                    p_part_name: partName,
                     p_part_number: partNumber,
                     p_operation_name: operationName,
                     p_description: description
                 });
-                if (updateError) throw updateError;
+                if (updateError) {
+                    throw updateError;
+                }
                 if (submitForValidation) {
                     const { error: workflowError } = await supabaseClient.rpc("workflow_start_instance", {
                         p_definition_id: 1,
@@ -1338,10 +1352,9 @@ async function initializeSopPage() {
                     code
                 ),
                 models (
-                    name,
+                    size_model,
                     model_series (
-                        name,
-                        code
+                        name
                     )
                 ),
                 part_names (
