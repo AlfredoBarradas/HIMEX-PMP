@@ -213,3 +213,43 @@ table tbody tr:has(button, a, [role="button"], [data-action]) {
 table tbody tr:has(button, a, [role="button"], [data-action]):hover {
     box-shadow: inset 3px 0 0 #168a80;
 }
+
+.primary-button,
+.secondary-button,
+.danger-button,
+.remark-button {
+    padding: 8px 14px;
+    border-radius: 5px;
+    font-family: inherit; 
+    font-size: 14px;
+    cursor: pointer
+}
+
+.primary-button {
+    background: var(--hisense);
+    border: 1px solid var(--hisense);
+    color: #fff
+}
+.primary-button:hover {
+    background: var(--hisense-dark)
+}
+
+.secondary-button {
+    background: #fff;
+    border: 1px solid #cfd8dc;
+    color: var(--ink)
+}
+
+.secondary-button:hover {
+    background: #f4f6f7
+}
+
+.danger-button {
+    background: #fff;
+    border: 1px solid #d9534f;
+    color: #d9534f
+}
+
+.danger-button:hover {
+    background: #fae1e1
+}

@@ -118,35 +118,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         const revisionIds = [...new Set(allInstances.map(row => row.source_revision_id).filter(Boolean))];
 
         const [docResult, revisionResult, assignmentResult] = await Promise.all([
-            docIds.length ? supabaseClient
-                .from("sop_documents")
-                .select(`
-                    id,
-                    sop_code,
-                    sop_number,
-                    part_number,
-                    operation_name,
-                    created_by,
-                    model,
-                    part_name
-                `)
-                .in("id", docIds)
-                : Promise.resolve({data: [], error: null}),
+            DocumentData.getSopDocuments({ids: docIds}),
 
-            revisionIds.length ? supabaseClient
-                .from("sop_revisions")
-                .select(`
-                    id,
-                    sop_id,
-                    revision_code,
-                    status,
-                    created_at,
-                    created_by,
-                    released_at,
-                    description
-                `)
-                .in("id", revisionIds)
-                : Promise.resolve({data: [], error: null}),
+            DocumentData.getSopRevisionsByIds(revisionIds),
 
             tasks.length ? supabaseClient
                 .from("workflow_task_assignees")
@@ -170,41 +144,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             docResult.data || [], 
             revisions = revisionResult.data || [], 
             assignments = assignmentResult.data || [];
-        
-        const modelIds = [...new Set(docs.map(row => row.model_id).filter(Boolean))];
-        const partNameIds = [...new Set(docs.map(row => row.part_name_id).filter(Boolean))];
-
-        const [modelsResult, partNamesResult] = await Promise.all([
-            modelIds.length ? supabaseClient
-                .from("models")
-                .select(`
-                    id,
-                    name
-                `)
-                .in("id", modelIds)
-                : Promise.resolve({data: [], error: null}),
-
-            partNameIds.length ? supabaseClient
-                .from("part_names")
-                .select(`
-                    id,
-                    name
-                `)
-                .in("id", partNameIds)
-                : Promise.resolve({data: [], error: null})
-        ]);
-        if (modelsResult.error) {
-            throw modelsResult.error;
-        }
-        if (partNamesResult.error) {
-            throw partNamesResult.error;
-        }
-
         const docMap = new Map(docs.map(row => [String(row.id), row]));
         const revisionMap = new Map(revisions.map(row => [String(row.id), row]));
-        const modelMap = new Map((modelsResult.data || []).map(row => [String(row.id), row.name]));
-        const partNameMap = new Map((partNamesResult.data||[]).map(row => [String(row.id), row.name]));
-        const peopleResult = ids.length ? await supabaseClient.rpc("get_sop_workflow_people", {p_instance_ids: ids}) : {data: [], error:null};
+        const peopleResult = ids.length ? await supabaseClient.rpc("get_workflow_people", {p_instance_ids: ids}) : {data: [], error:null};
 
         if(peopleResult.error) {
             throw peopleResult.error;
@@ -271,7 +213,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
             body.innerHTML = list.map(row => '<tr><td>'+
                 escapeText((row.doc?.sop_code || "Unassigned")+" ("+(row.revision?.revision_code || "R??")+")")+'</td><td>'+
-                escapeText(modelMap.get(String(row.doc?.model))||"—")+'</td><td>'+
+                escapeText(row.doc?.models?.size_model || row.doc?.model || "—")+'</td><td>'+
                 escapeText(row.doc?.part_number||"—")+'</td><td>'+
                 escapeText(row.creator)+'</td><td>'+
                 escapeText(row.assignees)+'</td><td>'+
@@ -388,41 +330,24 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
 
             const currentUserId = currentUserData?.user?.id || "";
-            const docResult = instance.source_document_id? await supabaseClient
-                .from("sop_documents")
-                .select(`
-                    id,
-                    sop_code,
-                    part_number,
-                    operation_name,
-                    created_by,
-                    model
-                `)
-                .eq("id", instance.source_document_id)
-                .maybeSingle(): {data:null,error:null};
+            const docResult = instance.source_document_id
+                ? await DocumentData.getSopDocuments({id: Number(instance.source_document_id)})
+                : {data: null, error: null};
 
             if(docResult.error){
                 throw docResult.error;
             }
 
-            const revResult=instance.source_revision_id?await supabaseClient
-                .from("sop_revisions")
-                .select(`
-                    id,
-                    revision_code,
-                    status,
-                    created_by,
-                    description,
-                    released_at
-                `)
-                .eq("id",instance.source_revision_id)
-                .maybeSingle(): {data: null, error: null};
+            const revisionResult = instance.source_revision_id
+                ? await DocumentData.getSopRevisionsByIds([Number(instance.source_revision_id)])
+                : {data: [], error: null};
+            const revResult = {data: revisionResult.data?.[0] || null, error: revisionResult.error};
 
             if (revResult.error) {
                 throw revResult.error;
             }
             
-            const peopleResult = await supabaseClient.rpc("get_sop_workflow_people", {p_instance_ids: [Number(instanceId)]});
+            const peopleResult = await supabaseClient.rpc("get_workflow_people", {p_instance_ids: [Number(instanceId)]});
             if (peopleResult.error) {
                 throw peopleResult.error;
             }
@@ -490,7 +415,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             detail.innerHTML = "<h3>" + escapeText(doc.sop_code || "Unassigned SOP") + " · " + escapeText(revision.revision_code || "Revision unknown")+`</h3>
                                 <p><strong>Workflow ID:</strong> ` + escapeText(instance.id) + " · <strong>Status:</strong> "+ escapeText(labelText(instance.status)) + `</p>
                                 <p><strong>Creator:</strong> ` + escapeText(profileMap.get(String(revision.created_by || doc.created_by)) || "Creator profile unavailable") + `</p>
-                                <p><strong>Part No.:</strong> ` + escapeText(doc.part_number||"—")+" · <strong>Operation:</strong> "+ escapeText(doc.operation_name||"—")+`</p>
+                                <p><strong>Part No.:</strong> ` + escapeText(doc.part_number||"—")+" · <strong>Document Name:</strong> "+ escapeText(doc.document_name||"—")+`</p>
                                 <p><strong>Submitted:</strong> ` + escapeText(dateText(instance.started_at)) + " · <strong>Duration:</strong> "+ escapeText(duration)+(instance.completed_at?"": " (in progress)") + `</p>
                                 <h4>Tasks</h4>
                                     <div class='workflow-task-table'>
