@@ -216,10 +216,7 @@ async function initializeSopPage() {
                 part_number,
                 operation_name,
                 created_at,
-                workshops (
-                    name,
-                    code
-                ),
+                workshops!sop_documents_workshop_id_fkey(name),
                 process_areas (
                     name,
                     code
@@ -332,9 +329,8 @@ async function initializeSopPage() {
         const { data, error } = await supabaseClient
             .from("workshops")
             .select(`
-                id, 
-                name, 
-                code
+                id,
+                name
             `)
             .eq("active", true)
             .order("name");
@@ -346,7 +342,7 @@ async function initializeSopPage() {
         data.forEach(workshop => {
             const option = document.createElement("option");
             option.value = workshop.name;
-            option.textContent = `${workshop.name} (${workshop.code})`;
+            option.textContent = workshop.name;
             workshopSelect.appendChild(option);
         });
     }
@@ -794,7 +790,7 @@ async function initializeSopPage() {
                         operation_name,
                         created_at,
                         created_by,
-                        workshops(name),
+                        workshops!sop_documents_workshop_id_fkey(name),
                         process_areas(name),
                         models(size_model),
                         part_names(code)
@@ -1051,7 +1047,7 @@ async function initializeSopPage() {
                     operation_name,
                     created_at,
                     created_by,
-                    workshops(name),
+                    workshops!sop_documents_workshop_id_fkey(name),
                     process_areas(name),
                     models(size_model),
                     part_names(code)
@@ -1487,10 +1483,7 @@ async function initializeSopPage() {
                 operation_name,
                 created_at,
                 created_by,
-                workshops(
-                    name,
-                    code
-                ),
+                workshops!sop_documents_workshop_id_fkey(name),
                 process_areas(
                     name,
                     code
