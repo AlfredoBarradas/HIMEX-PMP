@@ -25,29 +25,16 @@ BEGIN
         EXECUTE $sql$
             UPDATE public.documents d
                SET model = d.metadata->>'model',
-                   workshop = COALESCE(d.metadata->>'workshop', w.name),
-                   part_name = d.metadata->>'part_name',
-                   part_number = d.metadata->>'part_number',
-                   source_type = d.metadata->>'source_type',
-                   process_area = d.metadata->>'process_area',
-                   document_name = d.metadata->>'operation_name'
-              FROM public.workshops w
-             WHERE w.id = d.workshop_id
-               AND d.document_type_code = 'sop'
-        $sql$;
-
-        -- Also migrate rows without a valid workshop relationship.
-        EXECUTE $sql$
-            UPDATE public.documents d
-               SET model = d.metadata->>'model',
-                   workshop = d.metadata->>'workshop',
+                   workshop = COALESCE(
+                       d.metadata->>'workshop',
+                       (SELECT w.name FROM public.workshops w WHERE w.id = d.workshop_id)
+                   ),
                    part_name = d.metadata->>'part_name',
                    part_number = d.metadata->>'part_number',
                    source_type = d.metadata->>'source_type',
                    process_area = d.metadata->>'process_area',
                    document_name = d.metadata->>'operation_name'
              WHERE d.document_type_code = 'sop'
-               AND d.workshop_id IS NULL
         $sql$;
     END IF;
 END;
