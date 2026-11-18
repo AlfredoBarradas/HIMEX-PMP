@@ -308,6 +308,7 @@ async function initializeSopPage() {
         data.forEach(workshop => {
             const option = document.createElement("option");
             option.value = workshop.name;
+            option.dataset.id = String(workshop.id);
             option.textContent = workshop.name;
             workshopSelect.appendChild(option);
         });
@@ -350,6 +351,7 @@ async function initializeSopPage() {
         areas.forEach(area => {
             const option = document.createElement("option");
             option.value = area.name;
+            option.dataset.id = String(area.id);
             option.textContent = `${area.name} (${area.code})`;
             processSelect.appendChild(option);
         });
@@ -403,6 +405,7 @@ async function initializeSopPage() {
         data.forEach(model => {
             const option = document.createElement("option");
             option.value = model.size_model;
+            option.dataset.id = String(model.id);
             option.textContent = model.size_model;
             modelSelect.appendChild(option);
         });
@@ -601,13 +604,20 @@ async function initializeSopPage() {
                 if (!editingRevisionId) {
                     throw new Error("Draft revision is missing. Reopen the draft and try again.");
                 }
+                const workshopId = Number(document.getElementById("sop-workshop").selectedOptions[0]?.dataset.id);
+                const processAreaId = Number(document.getElementById("sop-process").selectedOptions[0]?.dataset.id);
+                const modelId = Number(document.getElementById("sop-model").selectedOptions[0]?.dataset.id);
+                const partNameId = Number(partName);
+                if (![workshopId, processAreaId, modelId, partNameId].every(Number.isFinite)) {
+                    throw new Error("Select a valid workshop, process area, model, and part name before saving.");
+                }
                 const { data: updateResult, error: updateError } = await supabaseClient.rpc("update_sop_draft", {
                     p_sop_id: Number(sopId.value),
                     p_revision_id: Number(editingRevisionId),
-                    p_workshop: workshopName,
-                    p_process_area: processArea,
-                    p_model: modelName,
-                    p_part_name: partName,
+                    p_workshop_id: workshopId,
+                    p_process_area_id: processAreaId,
+                    p_model_id: modelId,
+                    p_part_name_id: partNameId,
                     p_part_number: partNumber,
                     p_operation_name: operationName,
                     p_description: description
