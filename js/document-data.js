@@ -39,13 +39,14 @@ window.DocumentData = (() => {
         const modelNames = uniqueValues(rows.map(row => metadataOf(row).model));
         const partNames = uniqueValues(rows.map(row => metadataOf(row).part_name));
 
-        const [areasResult, modelsResult, partsByNameResult, partsByCodeResult] = await Promise.all([
+        const [areasResult, modelsResult, partsByNameResult, partsByCodeResult, partsByValueResult] = await Promise.all([
             processNames.length ? supabaseClient.from("process_areas").select("id,name,code").in("name", processNames) : Promise.resolve({data: [], error: null}),
             modelNames.length ? supabaseClient.from("models").select("id,size_model,model_series").in("size_model", modelNames) : Promise.resolve({data: [], error: null}),
-            partNames.length ? supabaseClient.from("part_names").select("id,name,code").in("name", partNames) : Promise.resolve({data: [], error: null}),
-            partNames.length ? supabaseClient.from("part_names").select("id,name,code").in("code", partNames) : Promise.resolve({data: [], error: null})
+            partNames.length ? supabaseClient.from("part_names").select("id,name,code,part_name").in("name", partNames) : Promise.resolve({data: [], error: null}),
+            partNames.length ? supabaseClient.from("part_names").select("id,name,code,part_name").in("code", partNames) : Promise.resolve({data: [], error: null}),
+            partNames.length ? supabaseClient.from("part_names").select("id,name,code,part_name").in("part_name", partNames) : Promise.resolve({data: [], error: null})
         ]);
-        for (const result of [areasResult, modelsResult, partsByNameResult, partsByCodeResult]) {
+        for (const result of [areasResult, modelsResult, partsByNameResult, partsByCodeResult, partsByValueResult]) {
             if (result.error) throw result.error;
         }
 
@@ -59,9 +60,10 @@ window.DocumentData = (() => {
         const modelMap = new Map((modelsResult.data || []).map(row => [String(row.size_model), row]));
         const seriesMap = new Map((seriesResult.data || []).map(row => [String(row.name), row]));
         const partMap = new Map();
-        [...(partsByNameResult.data || []), ...(partsByCodeResult.data || [])].forEach(row => {
+        [...(partsByNameResult.data || []), ...(partsByCodeResult.data || []), ...(partsByValueResult.data || [])].forEach(row => {
             partMap.set(String(row.name), row);
             partMap.set(String(row.code), row);
+            partMap.set(String(row.part_name), row);
         });
 
         return rows.map(row => {
