@@ -491,7 +491,7 @@ async function initializeSopPage() {
             { id: "sop-model", label: "Model size" },
             { id: "sop-part-name", label: "Part Name" },
             { id: "sop-part-number", label: "Part Number" },
-            { id: "sop-operation", label: "Operation Name" },
+            { id: "sop-operation", label: "Document Name" },
             { id: "sop-description", label: "Description" }
         ];
         const missing = [];
@@ -1595,7 +1595,7 @@ async function initializeSopPage() {
                 </div>
                 <div class="sop-modal-field">
                     <span>
-                        Operation Name
+                        Document Name
                     </span>
                     <strong>
                         ${escapeHtml(sop.document_name || "")}
@@ -1722,7 +1722,7 @@ async function initializeSopPage() {
                 </div>
                 <div class="sop-modal-field">
                     <span>
-                        Operation Name
+                        Document Name
                     </span>
                     <strong>
                         ${sop.document_name || ""}
