@@ -415,7 +415,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             detail.innerHTML = "<h3>" + escapeText(doc.sop_code || "Unassigned SOP") + " · " + escapeText(revision.revision_code || "Revision unknown")+`</h3>
                                 <p><strong>Workflow ID:</strong> ` + escapeText(instance.id) + " · <strong>Status:</strong> "+ escapeText(labelText(instance.status)) + `</p>
                                 <p><strong>Creator:</strong> ` + escapeText(profileMap.get(String(revision.created_by || doc.created_by)) || "Creator profile unavailable") + `</p>
-                                <p><strong>Part No.:</strong> ` + escapeText(doc.part_number||"—")+" · <strong>Operation:</strong> "+ escapeText(doc.operation_name||"—")+`</p>
+                                <p><strong>Part No.:</strong> ` + escapeText(doc.part_number||"—")+" · <strong>Operation:</strong> "+ escapeText(doc.document_name||"—")+`</p>
                                 <p><strong>Submitted:</strong> ` + escapeText(dateText(instance.started_at)) + " · <strong>Duration:</strong> "+ escapeText(duration)+(instance.completed_at?"": " (in progress)") + `</p>
                                 <h4>Tasks</h4>
                                     <div class='workflow-task-table'>
