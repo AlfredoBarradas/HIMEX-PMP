@@ -101,7 +101,7 @@ window.DocumentData = (() => {
                 model: modelName,
                 part_name: partName,
                 part_number: row.part_number || "",
-                operation_name: row.document_name || "",
+                document_name: row.document_name || "",
                 document_name: row.document_name || "",
                 source_type: row.source_type || null,
                 created_by: row.created_by,
@@ -119,7 +119,7 @@ window.DocumentData = (() => {
                     }
                 } : {size_model: modelName, model_series: {name: ""}},
                 part_names: part || {name: partName, code: partName},
-                sop_revisions: revisions
+                document_revisions: revisions
             };
         });
     }
@@ -183,7 +183,7 @@ window.DocumentData = (() => {
         const {data, error} = await getSopDocuments();
         if (error) return {data: null, error};
         const drafts = [];
-        (data || []).forEach(doc => (doc.sop_revisions || []).forEach(revision => {
+        (data || []).forEach(doc => (doc.document_revisions || []).forEach(revision => {
             if (String(revision.created_by || "") === String(userId) && String(revision.status || "").toLowerCase() === "draft") {
                 drafts.push({doc, revision});
             }
