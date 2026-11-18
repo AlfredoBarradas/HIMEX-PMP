@@ -181,5 +181,5 @@ window.DocumentData = (() => {
         return {data: drafts, error: null};
     }
 
-    return {getSopDocuments, getSopRevisionsByIds, getMySopDrafts};
+    return {getSopDocuments, getSopRevisionsByIds, getSopRevisionByCode, getMySopDrafts};
 })();
