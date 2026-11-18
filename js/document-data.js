@@ -15,6 +15,7 @@ window.DocumentData = (() => {
         created_by,
         created_at,
         updated_at,
+        status,
         model,
         workshop,
         part_name,
@@ -106,6 +107,7 @@ window.DocumentData = (() => {
                 created_by: row.created_by,
                 created_at: row.created_at,
                 updated_at: row.updated_at,
+                status: row.status,
                 workshops: {name: workshopName},
                 process_areas: areaMap.get(String(processArea)) || {name: processArea, code: ""},
                 models: model ? {
