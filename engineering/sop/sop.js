@@ -741,7 +741,7 @@ async function initializeSopPage() {
                     <td>${escapeHtml(item.doc.models?.size_model || "")}</td>
                     <td>${escapeHtml(item.doc.part_names?.code || "")}</td>
                     <td>${escapeHtml(item.doc.part_number || "")}</td>
-                    <td>${escapeHtml(item.doc.operation_name || "")}</td>
+                    <td>${escapeHtml(item.doc.document_name || "")}</td>
                 </tr>`
             ).join("");
         } catch (error) {
@@ -770,7 +770,7 @@ async function initializeSopPage() {
             if (error) {
                 throw error;
             }
-            const revision = (sop.sop_revisions || []).find(item => String(item.status || "").toLowerCase() === "draft" && String(item.created_by || sop.created_by) === String(userId));
+            const revision = (sop.document_revisions || []).find(item => String(item.status || "").toLowerCase() === "draft" && String(item.created_by || sop.created_by) === String(userId));
             if (!revision) {
                 throw new Error("This SOP has no editable Draft revision.");
             }
@@ -788,7 +788,7 @@ async function initializeSopPage() {
             document.getElementById("sop-model").value = String(sop.model);
             document.getElementById("sop-part-name").value = String(sop.part_names?.id);
             document.getElementById("sop-part-number").value = sop.part_number || "";
-            document.getElementById("sop-operation").value = sop.operation_name || "";
+            document.getElementById("sop-operation").value = sop.document_name || "";
             document.getElementById("sop-description").value = revision.description || "";
             document.getElementById("sop-file").value = "";
 
@@ -866,7 +866,7 @@ async function initializeSopPage() {
                 await Promise.all([loadMyDrafts(), loadSopCatalog(), refreshWorkflowCounts()]);
             } catch (error) {
                 console.error("Error deleting SOP draft:", error);
-                alert("Could not delete this draft: " + (error.message || "Check the delete_sop_draft RPC and permissions."));
+                alert("Could not delete this draft: " + (error.message || "Check the delete_document_draft RPC and permissions."));
             } finally {
                 deleteButton.disabled = false;
             }
@@ -1030,7 +1030,7 @@ async function initializeSopPage() {
                     <td>` + escapeHtml(doc.models?.size_model || "") + `</td>
                     <td>` + escapeHtml(doc.part_names?.code || "") + `</td>
                     <td>` + escapeHtml(doc.part_number || "") + `</td>
-                    <td>` + escapeHtml(doc.operation_name || "") + `</td>
+                    <td>` + escapeHtml(doc.document_name || "") + `</td>
                     <td>` + renderRevisionBadge(revision.revision_code, revision.status) + `</td>
                     <td>` + escapeHtml(creatorMap.get(String(revision.created_by || doc.created_by || "")) || "Unknown") + `</td>
                 </tr>`)
@@ -1302,7 +1302,7 @@ async function initializeSopPage() {
         const body = document.getElementById("sop-catalog-body"); 
         body.innerHTML = "";
         sops.forEach(sop => {
-            const revisions = sop.sop_revisions || [];
+            const revisions = sop.document_revisions || [];
             const released = revisions.filter(revision => String(revision.status || "").toLowerCase() === "released");
             const current = [...(released.length? released: revisions)].sort((a, b) => revisionNumber(b) - revisionNumber(a))[0];
             const creator = creatorMap.get(String(current?.created_by || sop.created_by)) || "Unknown";
@@ -1331,7 +1331,7 @@ async function initializeSopPage() {
                 <td>${escapeHtml(sop.models?.size_model||"")}</td>
                 <td>${escapeHtml(sop.part_names?.code||"")}</td>
                 <td>${escapeHtml(sop.part_number||"")}</td>
-                <td>${escapeHtml(sop.operation_name||"")}</td>
+                <td>${escapeHtml(sop.document_name||"")}</td>
                 <td>${renderRevisionBadge(current?.revision_code,status)}</td>
                 <td>${escapeHtml(creator)}</td>
             `;
@@ -1354,7 +1354,7 @@ async function initializeSopPage() {
             return; 
         }
         const creatorIds = [...new Set(data.map(sop => { 
-            const revs=sop.sop_revisions || []; 
+            const revs=sop.document_revisions || []; 
             const released=revs.filter(r=>String(r.status||"").toLowerCase()==="released"); 
             const current=[...(released.length?released:revs)].sort((a,b)=>revisionNumber(b)-revisionNumber(a))[0]; 
             return current?.created_by || sop.created_by; 
@@ -1387,7 +1387,7 @@ async function initializeSopPage() {
 
     function renderSopModal(sop) {
         const modalBody = document.querySelector("#sop-modal .sop-modal-body");
-        const revisions = [...(sop.sop_revisions || [])].sort((a,b) => (Number(b.revision_number) || 0) - (Number(a.revision_number) || 0));
+        const revisions = [...(sop.document_revisions || [])].sort((a,b) => (Number(b.revision_number) || 0) - (Number(a.revision_number) || 0));
         const releasedRevision = revisions.find(revision => String(revision.status || "").toLowerCase() === "released");
         const latestRevision = revisions[0];
         const draftCandidate = 
@@ -1598,7 +1598,7 @@ async function initializeSopPage() {
                         Operation Name
                     </span>
                     <strong>
-                        ${escapeHtml(sop.operation_name || "")}
+                        ${escapeHtml(sop.document_name || "")}
                     </strong>
                 </div>
                 <div class="sop-modal-field">
@@ -1632,7 +1632,7 @@ async function initializeSopPage() {
     }
     function openRevisionModal(sop) {
         const modalBody = document.querySelector(".sop-modal-body");
-        const revisions = sop.sop_revisions || [];
+        const revisions = sop.document_revisions || [];
         const currentRevision = revisions.sort((a, b) => b.revision_number - a.revision_number)[0];
         const currentRevisionNumber = currentRevision?.revision_number ?? 0;
         const nextRevisionNumber = currentRevisionNumber + 1;
@@ -1725,7 +1725,7 @@ async function initializeSopPage() {
                         Operation Name
                     </span>
                     <strong>
-                        ${sop.operation_name || ""}
+                        ${sop.document_name || ""}
                     </strong>
                 </div>
             </div>
