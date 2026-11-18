@@ -785,7 +785,7 @@ async function initializeSopPage() {
                 throw new Error("This SOP has no editable Draft revision.");
             }
             
-            const seriesModel = sop.models?.model_series;
+            const seriesModel = sop.models?.model_series?.name || "";
             await loadWorkshops();
             await loadModelSeries();
             await loadProcessAreas(sop.workshop);
