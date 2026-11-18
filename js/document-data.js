@@ -148,6 +148,26 @@ window.DocumentData = (() => {
         };
     }
 
+    async function getSopRevisionByCode(documentId, revisionCode) {
+        const {data, error} = await supabaseClient.from("document_revisions")
+            .select("id,document_id,revision_number,revision_code,status,description,created_by,created_at,released_at,metadata")
+            .eq("document_id", documentId)
+            .eq("revision_code", revisionCode)
+            .single();
+        if (error) return {data: null, error};
+        return {
+            data: {
+                ...data,
+                sop_id: data.document_id,
+                original_revision: data.metadata?.original_revision || null,
+                document_name: data.metadata?.document_name || null,
+                drive_file_id: data.metadata?.drive_file_id || null,
+                drive_url: data.metadata?.drive_url || null
+            },
+            error: null
+        };
+    }
+
     async function getMySopDrafts(userId) {
         const {data, error} = await getSopDocuments();
         if (error) return {data: null, error};
