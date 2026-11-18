@@ -1326,7 +1326,7 @@ async function initializeSopPage() {
             const released = revisions.filter(revision => String(revision.status || "").toLowerCase() === "released");
             const current = [...(released.length? released: revisions)].sort((a, b) => revisionNumber(b) - revisionNumber(a))[0];
             const creator = creatorMap.get(String(current?.created_by || sop.created_by)) || "Unknown";
-            const status = current?.status || "Unknown";
+            const status = current?.status || sop.status || "Unknown";
             const row = document.createElement("tr"); 
 
             row.className = "catalog-clickable-row"; 
@@ -1626,7 +1626,7 @@ async function initializeSopPage() {
                         Status
                     </span>
                     <strong>
-                        ${escapeHtml(currentRevision?.status || "")}
+                        ${escapeHtml(currentRevision?.status || sop.status || "")}
                     </strong>
                 </div>
                 <div class="sop-modal-field sop-modal-field-full">
@@ -1637,7 +1637,7 @@ async function initializeSopPage() {
                         ${escapeHtml(currentRevision?.description || "")}
                     </p>
                 </div>
-                ${initialDraftActions + (String(currentRevision?.status || "").toLowerCase() === "released"?
+                ${initialDraftActions + (String(currentRevision?.status || sop.status || "").toLowerCase() === "released"?
                 `<div class="sop-modal-actions">
                     <button 
                     type="button" 
@@ -1656,7 +1656,7 @@ async function initializeSopPage() {
         const currentRevision = revisions.sort((a, b) => b.revision_number - a.revision_number)[0];
         const currentRevisionNumber = currentRevision?.revision_number ?? 0;
         const nextRevisionNumber = currentRevisionNumber + 1;
-        const currentRevisionCode = currentRevision?.revision_code || `R${String(currentRevisionNumber).padStart(2, "0")}`;
+        const currentRevisionCode = currentRevision?.revision_code || (currentRevision ? `R${String(currentRevisionNumber).padStart(2, "0")}` : "Not assigned");
         const nextRevisionCode = `R${String(nextRevisionNumber).padStart(2, "0")}`;
         modalBody.innerHTML = 
             `<div class="sop-revision-header">
