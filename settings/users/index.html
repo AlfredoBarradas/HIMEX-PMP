@@ -24,29 +24,29 @@ class="auth-pending">
         <div id="sidebar-container"></div>
         <main class="main-content">
             <header id="topbar-container"></header>
+
+            <!-- Content -->
             <section class="content">
                 <div class="page-header">
                     <div>
                         <h1>Users</h1>
                         <p>Manage system users and their access roles.</p>
                     </div>
-                    <button type="button" id="create-user-button">Create User</button>
+                    <button type="button" class="secondary-button" id="create-user-button">Create User</button>
                 </div>
-                <section class="users-section">
 
-                <div class="section-header users-section-header">
-                    <h2>System Users</h2>
-                    <div class="users-search">
-                        <input
+                <section class="users-section">
+                    <div class="section-header users-section-header">
+                        <div class="users-search">
+                            <input 
                             type="search"
                             id="users-search-input"
                             placeholder="Search by employee number, name, role or status..."
                             aria-label="Search users"
-                            autocomplete="off"
-                        >
-                        <button type="button" id="clear-users-search" aria-label="Clear search" hidden>×</button>
+                            autocomplete="off">
+                            <button type="button" id="clear-users-search" aria-label="Clear search" hidden>×</button>
+                        </div>
                     </div>
-                </div>
 
                     <div class="table-container">
                         <table class="users-table">
@@ -56,7 +56,6 @@ class="auth-pending">
                                     <th>Name</th>
                                     <th>Role</th>
                                     <th>Status</th>
-                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="users-table-body">
@@ -69,6 +68,7 @@ class="auth-pending">
                 </section>
             </section>
 
+            <!-- Create User -->
             <div id="user-modal" class="modal hidden">
                 <div class="modal-overlay" data-action="close-user-modal"></div>
                 <div class="modal-content">
@@ -124,9 +124,11 @@ class="auth-pending">
                 </div>
             </div>
 
+            <!-- Manage User -->
             <div id="user-actions-modal" class="modal hidden">
                 <div class="modal-overlay" data-action="close-actions-modal"></div>
                 <section class="user-actions-modal-content" role="dialog" aria-modal="true" aria-labelledby="actions-user-name">
+
                     <div class="user-actions-modal-header">
                         <div class="user-summary">
                             <div class="user-avatar">
@@ -139,6 +141,7 @@ class="auth-pending">
                         </div>
                         <button type="button" id="close-actions-modal" class="close-actions-button" aria-label="Close">×</button>
                     </div>
+
                     <div class="user-actions-grid">
                         <button type="button" class="user-action-card" data-user-action="edit">
                             <span class="user-action-icon">✎</span>
@@ -161,12 +164,14 @@ class="auth-pending">
                             <span>Restore access to the account.</span>
                         </button>
                     </div>
+
                     <p id="user-actions-message" class="user-actions-message" role="status" aria-live="polite"></p>
                 </section>
             </div>
 
         </main>
-
+        
+        <!-- Extra section -->
         <div id="reset-password-modal" class="modal hidden">
             <div class="modal-overlay" data-action="close-reset-password"></div>
             <div class="modal-content">

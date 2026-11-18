@@ -271,3 +271,58 @@
     color: #6b7280;
     font-size: 13px;
 }
+
+/* Users search */
+.role-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+.role-search {
+    display: flex;
+    align-items: center;
+    width: min(420px, 100%);
+    min-width: 220px;
+    min-height: 40px;
+    background: var(--surface-color, #ffffff);
+    border: 1px solid var(--border-color, #d1d5db);
+    border-radius: 8px;
+    overflow: hidden;
+}
+.role-search:focus-within {
+    border-color: #2864c5;
+    box-shadow: 0 0 0 3px rgba(40, 100, 197, 0.12);
+}
+.role-search input {
+    width: 100%;
+    min-width: 0;
+    padding: 10px 12px;
+    color: inherit;
+    background: transparent;
+    border: none;
+    outline: none;
+    font: inherit;
+    font-size: 13px;
+}
+.role-search input:focus {
+    outline: none;
+    box-shadow: none;
+}
+.role-search button {
+    flex-shrink: 0;
+    width: 36px;
+    height: 38px;
+    color: #6b7280;
+    background: transparent;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+}
+.role-search button:hover {
+    color: #111827;
+    background: #f3f4f6;
+}
+.role-search button[hidden] {
+    display: none;
+}

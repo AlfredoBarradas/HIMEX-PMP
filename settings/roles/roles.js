@@ -3,7 +3,6 @@
     let permissions = [];
     let editingRoleId = null;
 
-
     async function initializePage() {
         const authData = await requireAuth();
         if (!authData?.user) {
@@ -19,7 +18,6 @@
         initializeEvents();
         document.body.classList.remove("auth-pending");
     }
-
 
     async function loadRoles() {
         const tableBody = document.getElementById("roles-table-body");
@@ -56,7 +54,6 @@
         }
 
         roles = data ?? [];
-        console.log("Roles loaded:", roles);
         renderRoles();
     }
 
@@ -74,19 +71,21 @@
             return;
         }
         tableBody.innerHTML = "";
+        
         roles.forEach(role => {
             const row = document.createElement("tr");
             const nameCell = document.createElement("td");
-            nameCell.textContent = role.name;
             const descriptionCell = document.createElement("td");
-            descriptionCell.textContent = role.description ?? "";
             const statusCell = document.createElement("td");
             const status = document.createElement("span");
+            const actionsCell = document.createElement("td");
+            const actions = document.createElement("div");
+
+            nameCell.textContent = role.name;
+            descriptionCell.textContent = role.description ?? "";
             status.className = `role-status ${role.active ? "active" : "inactive"}`;
             status.textContent = role.active ? "Active" : "Inactive";
             statusCell.appendChild(status);
-            const actionsCell = document.createElement("td");
-            const actions = document.createElement("div");
             actions.className = "role-actions";
             if (role.code === "admin" || role.code === "user") {
                 const protectedLabel = document.createElement("span");

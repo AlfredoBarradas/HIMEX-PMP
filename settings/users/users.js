@@ -1,6 +1,8 @@
 (async () => {
     let users = [];
     let editingUserId = null;
+
+
     async function initializePage() {
         const authData = await requireAuth();
         if (!authData?.user) {
@@ -12,17 +14,31 @@
             return;
         }
         await Promise.all([loadUsers(), loadRoles()]);
+        
         initializeEvents();
         document.body.classList.remove("auth-pending");
     }
+
     async function loadUsers() {
         const tableBody = document.getElementById("users-table-body");
         if (!tableBody) return;
         tableBody.innerHTML = `<tr><td colspan="5">Loading users...</td></tr>`;
-        const { data, error } = await supabaseClient.from("user_profiles").select(`
-            id, employee_number, full_name, active, must_change_password, role_id,
-            roles (id, code, name, active)
-        `).order("employee_number");
+        const { data, error } = await supabaseClient
+            .from("user_profiles")
+            .select(`
+                id, 
+                employee_number, 
+                full_name, 
+                active, 
+                must_change_password, 
+                role_id,
+                roles (
+                    id, 
+                    code, 
+                    name, 
+                    active
+                )
+            `).order("employee_number");
         if (error) {
             console.error("Error loading users:", error);
             tableBody.innerHTML = `<tr><td colspan="5">Unable to load users.</td></tr>`;
@@ -35,7 +51,14 @@
         const roleSelect = document.getElementById("user-role");
         if (!roleSelect) return;
         roleSelect.innerHTML = `<option value="">Loading roles...</option>`;
-        const { data, error } = await supabaseClient.from("roles").select("id, name, active").eq("active", true).order("name");
+        const { data, error } = await supabaseClient
+            .from("roles")
+            .select(`
+                id, 
+                name, 
+                active
+            `).eq("active", true)
+            .order("name");
         if (error) {
             console.error("Error loading roles:", error);
             roleSelect.innerHTML = `<option value="">Unable to load roles</option>`;
@@ -396,32 +419,25 @@
         tableBody.innerHTML = "";
         filteredUsers.forEach(user => {
             const row = document.createElement("tr");
+            const employeeCell = document.createElement("td");
+            const nameCell = document.createElement("td");
+            const roleCell = document.createElement("td");
+            const statusCell = document.createElement("td");
+            const status = document.createElement("span");
+
             row.dataset.userId = user.id;
             row.tabIndex = 0;
             row.setAttribute("role", "button");
             row.setAttribute("aria-label", `Manage user ${user.full_name || user.employee_number}`);
             row.style.cursor = "pointer";
-            row.addEventListener("keydown", event => {
-                if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    openUserActions(user.id);
-                }
-            });
-            const employeeCell = document.createElement("td");
+            
             employeeCell.textContent = user.employee_number;
-            const nameCell = document.createElement("td");
-            nameCell.textContent = user.full_name ?? "";
-            const roleCell = document.createElement("td");
-            roleCell.textContent = user.roles?.name ?? "No role";
-            const statusCell = document.createElement("td");
-            const status = document.createElement("span");
+            nameCell.textContent = user.full_name ?? "Unknown user...";
+            roleCell.textContent = user.roles?.name ?? "Unknown role...";
             status.className = `user-status ${user.active ? "active" : "inactive"}`;
             status.textContent = user.active ? "Active" : "Inactive";
             statusCell.appendChild(status);
-            const actionsCell = document.createElement("td");
-            actionsCell.textContent = "Manage";
-            actionsCell.className = "user-manage-cell";
-            row.append(employeeCell, nameCell, roleCell, statusCell, actionsCell);
+            row.append(employeeCell, nameCell, roleCell, statusCell);
             tableBody.appendChild(row);
         });
     }
