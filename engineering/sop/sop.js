@@ -345,7 +345,7 @@ async function initializeSopPage() {
         }
         const { data: partNames, error: partNameError } = await supabaseClient
             .from("part_names")
-            .select("id, name, code")
+            .select("id, name")
             .in("id", partNameIds)
             .eq("active", true)
             .order("name");
@@ -461,7 +461,7 @@ async function initializeSopPage() {
         data.forEach(workshop => {
             const option = document.createElement("option");
             option.value = workshop.id;
-            option.textContent = `${workshop.name} (${workshop.code})`;
+            option.textContent = workshop.name;
             workshopSelect.appendChild(option);
         });
     }
@@ -846,7 +846,7 @@ async function initializeSopPage() {
         catalogBody.innerHTML = '<tr><td colspan="12">Loading...</td></tr>';
         const { data, error } = await supabaseClient.from("sop_documents").select(`
             id,sop_code,part_number,operation_name,created_at,created_by,
-            workshops(name,code),process_areas(name,code),models(name,model_series(name,code)),part_names(name,code),
+            workshops(name),process_areas(name,code),models(name,model_series(name,code)),part_names(name,code),
             sop_revisions(revision_number,revision_code,status,created_at,created_by,released_at)
         `).order("created_at", { ascending: false });
         if (error) { console.error("Error loading SOP catalog:", error); catalogBody.innerHTML = '<tr><td colspan="12">Error loading SOP catalog.</td></tr>'; return; }
