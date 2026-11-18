@@ -144,6 +144,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             docResult.data || [], 
             revisions = revisionResult.data || [], 
             assignments = assignmentResult.data || [];
+        const docMap = new Map(docs.map(row => [String(row.id), row]));
+        const revisionMap = new Map(revisions.map(row => [String(row.id), row]));
         const peopleResult = ids.length ? await supabaseClient.rpc("get_workflow_people", {p_instance_ids: ids}) : {data: [], error:null};
 
         if(peopleResult.error) {
