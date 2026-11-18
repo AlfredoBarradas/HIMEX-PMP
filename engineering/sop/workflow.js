@@ -118,35 +118,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         const revisionIds = [...new Set(allInstances.map(row => row.source_revision_id).filter(Boolean))];
 
         const [docResult, revisionResult, assignmentResult] = await Promise.all([
-            docIds.length ? supabaseClient
-                .from("sop_documents")
-                .select(`
-                    id,
-                    sop_code,
-                    sop_number,
-                    part_number,
-                    operation_name,
-                    created_by,
-                    model,
-                    part_name
-                `)
-                .in("id", docIds)
-                : Promise.resolve({data: [], error: null}),
+            DocumentData.getSopDocuments({ids: docIds}),
 
-            revisionIds.length ? supabaseClient
-                .from("sop_revisions")
-                .select(`
-                    id,
-                    sop_id,
-                    revision_code,
-                    status,
-                    created_at,
-                    created_by,
-                    released_at,
-                    description
-                `)
-                .in("id", revisionIds)
-                : Promise.resolve({data: [], error: null}),
+            DocumentData.getSopRevisionsByIds(revisionIds),
 
             tasks.length ? supabaseClient
                 .from("workflow_task_assignees")
@@ -204,7 +178,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const revisionMap = new Map(revisions.map(row => [String(row.id), row]));
         const modelMap = new Map((modelsResult.data || []).map(row => [String(row.id), row.name]));
         const partNameMap = new Map((partNamesResult.data||[]).map(row => [String(row.id), row.name]));
-        const peopleResult = ids.length ? await supabaseClient.rpc("get_sop_workflow_people", {p_instance_ids: ids}) : {data: [], error:null};
+        const peopleResult = ids.length ? await supabaseClient.rpc("get_workflow_people", {p_instance_ids: ids}) : {data: [], error:null};
 
         if(peopleResult.error) {
             throw peopleResult.error;
@@ -388,41 +362,24 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
 
             const currentUserId = currentUserData?.user?.id || "";
-            const docResult = instance.source_document_id? await supabaseClient
-                .from("sop_documents")
-                .select(`
-                    id,
-                    sop_code,
-                    part_number,
-                    operation_name,
-                    created_by,
-                    model
-                `)
-                .eq("id", instance.source_document_id)
-                .maybeSingle(): {data:null,error:null};
+            const docResult = instance.source_document_id
+                ? await DocumentData.getSopDocuments({id: Number(instance.source_document_id)})
+                : {data: null, error: null};
 
             if(docResult.error){
                 throw docResult.error;
             }
 
-            const revResult=instance.source_revision_id?await supabaseClient
-                .from("sop_revisions")
-                .select(`
-                    id,
-                    revision_code,
-                    status,
-                    created_by,
-                    description,
-                    released_at
-                `)
-                .eq("id",instance.source_revision_id)
-                .maybeSingle(): {data: null, error: null};
+            const revisionResult = instance.source_revision_id
+                ? await DocumentData.getSopRevisionsByIds([Number(instance.source_revision_id)])
+                : {data: [], error: null};
+            const revResult = {data: revisionResult.data?.[0] || null, error: revisionResult.error};
 
             if (revResult.error) {
                 throw revResult.error;
             }
             
-            const peopleResult = await supabaseClient.rpc("get_sop_workflow_people", {p_instance_ids: [Number(instanceId)]});
+            const peopleResult = await supabaseClient.rpc("get_workflow_people", {p_instance_ids: [Number(instanceId)]});
             if (peopleResult.error) {
                 throw peopleResult.error;
             }
