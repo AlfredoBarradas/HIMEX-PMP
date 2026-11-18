@@ -10,12 +10,18 @@ window.DocumentData = (() => {
         document_type_code,
         document_number,
         document_code,
+        document_workshop_code_id,
         workshop_id,
         created_by,
         created_at,
         updated_at,
-        metadata,
-        workshops!documents_workshop_id_fkey(name),
+        model,
+        workshop,
+        part_name,
+        part_number,
+        source_type,
+        process_area,
+        document_name,
         document_revisions!document_revisions_document_id_fkey(
             id,
             document_id,
@@ -34,10 +40,10 @@ window.DocumentData = (() => {
 
     async function enrichSopDocuments(rows = []) {
         if (!rows.length) return [];
-        const metadataOf = row => row.metadata || {};
-        const processNames = uniqueValues(rows.map(row => metadataOf(row).process_area));
-        const modelNames = uniqueValues(rows.map(row => metadataOf(row).model));
-        const partNames = uniqueValues(rows.map(row => metadataOf(row).part_name));
+
+        const processNames = uniqueValues(rows.map(row => row.process_area));
+        const modelNames = uniqueValues(rows.map(row => row.model));
+        const partNames = uniqueValues(rows.map(row => row.part_name));
 
         const [areasResult, modelsResult, partsByNameResult, partsByCodeResult, partsByValueResult] = await Promise.all([
             processNames.length ? supabaseClient.from("process_areas").select("id,name,code").in("name", processNames) : Promise.resolve({data: [], error: null}),
@@ -67,11 +73,10 @@ window.DocumentData = (() => {
         });
 
         return rows.map(row => {
-            const metadata = metadataOf(row);
-            const workshopName = row.workshops?.name || metadata.workshop || "";
-            const processArea = metadata.process_area || "";
-            const modelName = metadata.model || "";
-            const partName = metadata.part_name || "";
+            const workshopName = row.workshop || "";
+            const processArea = row.process_area || "";
+            const modelName = row.model || "";
+            const partName = row.part_name || "";
             const model = modelMap.get(String(modelName));
             const part = partMap.get(String(partName));
             const revisions = (row.document_revisions || []).map(revision => ({
@@ -88,14 +93,16 @@ window.DocumentData = (() => {
                 sop_id: row.id,
                 sop_number: row.document_number,
                 sop_code: row.document_code,
+                document_workshop_code_id: row.document_workshop_code_id,
                 workshop: workshopName,
                 workshop_id: row.workshop_id,
                 process_area: processArea,
                 model: modelName,
                 part_name: partName,
-                part_number: metadata.part_number || "",
-                operation_name: metadata.operation_name || "",
-                source_type: metadata.source_type || null,
+                part_number: row.part_number || "",
+                operation_name: row.document_name || "",
+                document_name: row.document_name || "",
+                source_type: row.source_type || null,
                 created_by: row.created_by,
                 created_at: row.created_at,
                 updated_at: row.updated_at,
