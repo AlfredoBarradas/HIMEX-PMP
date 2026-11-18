@@ -144,40 +144,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             docResult.data || [], 
             revisions = revisionResult.data || [], 
             assignments = assignmentResult.data || [];
-        
-        const modelIds = [...new Set(docs.map(row => row.model_id).filter(Boolean))];
-        const partNameIds = [...new Set(docs.map(row => row.part_name_id).filter(Boolean))];
-
-        const [modelsResult, partNamesResult] = await Promise.all([
-            modelIds.length ? supabaseClient
-                .from("models")
-                .select(`
-                    id,
-                    name
-                `)
-                .in("id", modelIds)
-                : Promise.resolve({data: [], error: null}),
-
-            partNameIds.length ? supabaseClient
-                .from("part_names")
-                .select(`
-                    id,
-                    name
-                `)
-                .in("id", partNameIds)
-                : Promise.resolve({data: [], error: null})
-        ]);
-        if (modelsResult.error) {
-            throw modelsResult.error;
-        }
-        if (partNamesResult.error) {
-            throw partNamesResult.error;
-        }
-
-        const docMap = new Map(docs.map(row => [String(row.id), row]));
-        const revisionMap = new Map(revisions.map(row => [String(row.id), row]));
-        const modelMap = new Map((modelsResult.data || []).map(row => [String(row.id), row.name]));
-        const partNameMap = new Map((partNamesResult.data||[]).map(row => [String(row.id), row.name]));
         const peopleResult = ids.length ? await supabaseClient.rpc("get_workflow_people", {p_instance_ids: ids}) : {data: [], error:null};
 
         if(peopleResult.error) {
@@ -245,7 +211,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
             body.innerHTML = list.map(row => '<tr><td>'+
                 escapeText((row.doc?.sop_code || "Unassigned")+" ("+(row.revision?.revision_code || "R??")+")")+'</td><td>'+
-                escapeText(modelMap.get(String(row.doc?.model))||"—")+'</td><td>'+
+                escapeText(row.doc?.models?.size_model || row.doc?.model || "—")+'</td><td>'+
                 escapeText(row.doc?.part_number||"—")+'</td><td>'+
                 escapeText(row.creator)+'</td><td>'+
                 escapeText(row.assignees)+'</td><td>'+
