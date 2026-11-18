@@ -560,19 +560,13 @@ async function initializeSopPage() {
                 if (!userId) {
                     throw new Error("Please sign in again before creating a revision.");
                 }
-                const { data: revisionData, error: revisionCreateError } = await supabaseClient.rpc("create_sop_revision", {
-                    p_sop_id: Number(sopId.value),
-                    p_change_summary: description,
-                    p_created_by: userId
+                const { data: createdRevision, error: revisionCreateError } = await supabaseClient.rpc("create_document_revision", {
+                    p_document_id: Number(sopId.value),
+                    p_change_summary: description
                 });
                 if (revisionCreateError) throw revisionCreateError;
-                const createdRevision = Array.isArray(revisionData) ? revisionData[0] : revisionData;
-                if (!createdRevision?.revision_code) {
-                    console.error("Unexpected create_sop_revision response:", revisionData);
-                    throw new Error("Revision creation returned an unexpected response.");
-                }
-                const { data: revisionRecord, error: revisionLookupError } = await DocumentData.getSopRevisionByCode(Number(sopId.value), createdRevision.revision_code);
-                if (revisionLookupError) throw revisionLookupError;
+                if (!createdRevision?.revision_id || !createdRevision?.revision_code) throw new Error("Document revision creation returned an unexpected response.");
+                const revisionRecord = { id: createdRevision.revision_id, revision_code: createdRevision.revision_code };
                 if (submitForValidation) {
                     const { error: workflowError } = await supabaseClient.rpc("workflow_start_instance", {
                         p_definition_id: 1,
@@ -605,21 +599,17 @@ async function initializeSopPage() {
                     throw new Error("Draft revision is missing. Reopen the draft and try again.");
                 }
                 const workshopId = Number(document.getElementById("sop-workshop").selectedOptions[0]?.dataset.id);
-                const processAreaId = Number(document.getElementById("sop-process").selectedOptions[0]?.dataset.id);
-                const modelId = Number(document.getElementById("sop-model").selectedOptions[0]?.dataset.id);
                 const partNameId = Number(partName);
-                if (![workshopId, processAreaId, modelId, partNameId].every(Number.isFinite)) {
-                    throw new Error("Select a valid workshop, process area, model, and part name before saving.");
-                }
-                const { data: updateResult, error: updateError } = await supabaseClient.rpc("update_sop_draft", {
-                    p_sop_id: Number(sopId.value),
+                if (!Number.isFinite(workshopId) || !Number.isFinite(partNameId) || !processArea || !modelName) throw new Error("Select a valid workshop, process area, model, and part name before saving.");
+                const { error: updateError } = await supabaseClient.rpc("update_document_draft", {
+                    p_document_id: Number(sopId.value),
                     p_revision_id: Number(editingRevisionId),
                     p_workshop_id: workshopId,
-                    p_process_area_id: processAreaId,
-                    p_model_id: modelId,
+                    p_process_area: processArea,
+                    p_model: modelName,
                     p_part_name_id: partNameId,
-                    p_part_number: partNumber,
-                    p_operation_name: operationName,
+                    p_part_number: partNumber || null,
+                    p_document_name: operationName,
                     p_description: description
                 });
                 if (updateError) {
@@ -651,37 +641,27 @@ async function initializeSopPage() {
                 await loadSopCatalog();
                 return;
             }
-            const { data, error } = await supabaseClient.rpc("create_new_sop", {
-                p_workshop_name: workshopName,
+            const workshopId = Number(document.getElementById("sop-workshop").selectedOptions[0]?.dataset.id);
+            const partNameId = Number(partName);
+            if (!Number.isFinite(workshopId) || !Number.isFinite(partNameId)) throw new Error("Select a valid workshop and part name before saving.");
+            const { data: createdSop, error } = await supabaseClient.rpc("create_document_draft", {
+                p_document_type_code: "sop",
+                p_workshop_id: workshopId,
                 p_process_area: processArea,
-                p_model_name: modelName,
-                p_part_name: partName,
-                p_part_number: partNumber,
-                p_operation_name: operationName,
+                p_model: modelName,
+                p_part_name_id: partNameId,
+                p_part_number: partNumber || null,
+                p_document_name: operationName,
                 p_description: description
             });
-            if (error) {
-                throw error;
-            }
-            const createdSop = Array.isArray(data) ? data[0] : data;
-            if (!createdSop?.sop_id || !createdSop?.revision_code) {
-                console.error("Unexpected create_new_sop response:", data);
-                throw new Error("SOP creation returned an unexpected response. Check the browser console for the RPC response.");
-            }
-            const sopDisplayCode = createdSop.sop_code || "Unassigned";
+            if (error) throw error;
+            if (!createdSop?.document_id || !createdSop?.revision_id || !createdSop?.revision_code) throw new Error("Document creation returned an unexpected response.");
+            const sopDisplayCode = createdSop.document_code || "Unassigned";
             if (submitForValidation) {
-                const { data: revision, error: revisionError } = await DocumentData.getSopRevisionByCode(Number(createdSop.sop_id), createdSop.revision_code);
-                if (revisionError) {
-                    console.error("Error retrieving created SOP revision:", revisionError);
-                    alert("SOP " + sopDisplayCode + " was created as Draft, but its revision could not be retrieved. Submission did not start. " + revisionError.message);
-                    await loadMyDrafts();
-                    await loadSopCatalog();
-                    return;
-                }
                 const { data: workflow, error: workflowError } = await supabaseClient.rpc("workflow_start_instance", {
                     p_definition_id: 1,
-                    p_source_document_id: Number(createdSop.sop_id),
-                    p_source_revision_id: Number(revision.id),
+                    p_source_document_id: Number(createdSop.document_id),
+                    p_source_revision_id: Number(createdSop.revision_id),
                     p_metadata: {
                         source: "sop_form",
                         submitted_from: "Submit for Validation"
@@ -863,7 +843,7 @@ async function initializeSopPage() {
             if (!confirm("Discard " + revisionCode + "? The released revision remains unchanged, and this candidate cannot be resubmitted.")) return;
             discardRevisionButton.disabled = true;
             try {
-                const { error } = await supabaseClient.rpc("discard_sop_revision", { p_sop_id: Number(discardRevisionButton.dataset.sopId), p_revision_id: Number(discardRevisionButton.dataset.revisionId), p_reason: reason.trim() });
+                const { error } = await supabaseClient.rpc("discard_document_revision", { p_document_id: Number(discardRevisionButton.dataset.sopId), p_revision_id: Number(discardRevisionButton.dataset.revisionId), p_reason: reason.trim() });
                 if (error) throw error;
                 closeSopModal();
                 await Promise.all([loadMyDrafts(), loadSopCatalog(), refreshWorkflowCounts()]);
@@ -876,8 +856,8 @@ async function initializeSopPage() {
             if (!confirm("Delete this Draft SOP permanently? This action cannot be undone.")) return;
             deleteButton.disabled = true;
             try {
-                const { data, error } = await supabaseClient.rpc("delete_sop_draft", {
-                    p_sop_id: Number(deleteButton.dataset.sopId)
+                const { data, error } = await supabaseClient.rpc("delete_document_draft", {
+                    p_document_id: Number(deleteButton.dataset.sopId)
                 });
                 if (error) throw error;
                 closeSopModal();
@@ -1825,19 +1805,13 @@ async function initializeSopPage() {
                 if (authError) throw authError;
                 const userId = authResult?.user?.id;
                 if (!userId) throw new Error("Please sign in again before creating a revision.");
-                const { data: revisionData, error: revisionError } = await supabaseClient.rpc("create_sop_revision", {
-                    p_sop_id: Number(sop.id),
-                    p_change_summary: changeSummary,
-                    p_created_by: userId
+                const { data: createdRevision, error: revisionError } = await supabaseClient.rpc("create_document_revision", {
+                    p_document_id: Number(sop.id),
+                    p_change_summary: changeSummary
                 });
                 if (revisionError) throw revisionError;
-                const createdRevision = Array.isArray(revisionData) ? revisionData[0] : revisionData;
-                if (!createdRevision?.revision_code) {
-                    console.error("Unexpected create_sop_revision response:", revisionData);
-                    throw new Error("Revision creation returned an unexpected response.");
-                }
-                const { data: revisionRecord, error: revisionLookupError } = await DocumentData.getSopRevisionByCode(Number(sop.id), createdRevision.revision_code);
-                if (revisionLookupError) throw revisionLookupError;
+                if (!createdRevision?.revision_id || !createdRevision?.revision_code) throw new Error("Document revision creation returned an unexpected response.");
+                const revisionRecord = { id: createdRevision.revision_id, revision_code: createdRevision.revision_code };
                 const { error: workflowError } = await supabaseClient.rpc("workflow_start_instance", {
                     p_definition_id: 1,
                     p_source_document_id: Number(sop.id),
