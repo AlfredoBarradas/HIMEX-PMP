@@ -675,3 +675,24 @@ body.auth-pending::before {
         animation-iteration-count: 1 !important;
     }
 }
+
+/* ========================== GENERAL MODAL VARIANTS ========================== */
+
+.modal-content {
+    padding: 0;
+}
+
+#user-actions-modal .user-actions-modal-content {
+    width: min(760px, calc(100% - 32px));
+}
+
+/* ========================== GENERAL STATUS ELEMENTS ========================== */
+
+.role-status {
+    color: var(--color-text-muted);
+    font-size: 13px;
+}
+
+.role-status.inactive {
+    color: var(--color-danger);
+}
