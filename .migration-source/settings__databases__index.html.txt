@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Database manager</title>
+    <link rel="icon" href="/pmp-favicon.png">
+
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/components/sidebar/sidebar.css">
+    <link rel="stylesheet" href="/components/topbar/topbar.css">
+</head>
+
+<body 
+data-page="Modules" 
+data-admin-only="true" 
+data-auth-defer="true" 
+class="auth-pending">
+
+    <div class="app">
+        <div id="sidebar-container"></div>
+        <main class="main-content">
+            <header id="topbar-container"></header>
+
+            <section class="content">
+                <div class="table-manager">
+
+                    <div class="table-controls">
+                        <label for="table-selector">Select table</label>
+                        <select id="table-selector"></select>
+                    </div>
+
+                    <div>
+                        <table>
+                            <thead id="table-header"></thead>
+                            <tbody id="table-body">
+                                <tr>
+                                    <td>Select a table to display its records.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/supabase.js"></script>
+    <script src="/js/auth.js"></script>
+
+    <script src="/components/sidebar/sidebar.js"></script>
+    <script src="/components/topbar/topbar.js"></script>
+    <script src="./databases.js"></script>
+
+</body>
+
+</html>
