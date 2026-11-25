@@ -55,15 +55,6 @@
 .catalog-table tbody tr.catalog-clickable-row,.catalog-table tbody tr.workflow-clickable-row{cursor:pointer}
 #sop-catalog .catalog-table th:nth-child(9),#sop-workflow .catalog-table th:nth-child(9),#sop-validation .catalog-table th:nth-child(9),#sop-approval .catalog-table th:nth-child(9){width:220px;min-width:220px;max-width:220px}#sop-drafts .catalog-table th:nth-child(7){width:220px;min-width:220px;max-width:220px}
 #sop-catalog .catalog-table td:nth-child(9),#sop-drafts .catalog-table td:nth-child(7),#sop-workflow .catalog-table td:nth-child(9),#sop-validation .catalog-table td:nth-child(9),#sop-approval .catalog-table td:nth-child(9){width:220px;min-width:220px;max-width:220px;white-space:normal;overflow-wrap:anywhere}
-.primary-button,.secondary-button,.danger-button,.remark-button{padding:8px 14px;border-radius:var(--sop-control-radius);font-family:inherit;font-size:14px;cursor:pointer}
-.primary-button{background:var(--sop-accent);border:1px solid var(--sop-accent);color:#fff}
-.primary-button:hover{background:var(--sop-accent-dark)}
-.secondary-button{background:#fff;border:1px solid #cfd8dc;color:var(--sop-ink)}
-.secondary-button:hover{background:#f4f6f7}
-.danger-button{background:#fff;border:1px solid #d9534f;color:#d9534f}
-.danger-button:hover{background:#fae1e1}
-.remark-button{background:#fff;border:1px solid var(--sop-accent);color:var(--sop-accent-dark)}
-.remark-button:hover{background:var(--sop-page)}
 .form-section{width:min(100%,1050px);box-sizing:border-box;margin:0 auto 20px;padding:24px;border:1px solid var(--sop-line);border-radius:var(--sop-radius);background:var(--sop-panel)}
 #sop-form{width:100%;max-width:1050px;margin:0 auto}
 .form-section h3{margin:0 0 18px;color:var(--sop-ink)}
