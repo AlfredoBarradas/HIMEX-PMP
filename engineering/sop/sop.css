@@ -1,129 +1,802 @@
-:root {
-    --sop-accent:#00AAA6;
-    --sop-accent-dark:#008c88;
-    --sop-ink:#123037;
-    --sop-muted:#6d8589;
-    --sop-line:#dde8e9;
-    --sop-panel:#fff;
-    --sop-page:#f5f9f9;
-    --sop-shadow:0 18px 60px rgba(16,57,63,.08);
-    --sop-radius:8px;
-    --sop-control-radius:5px
+/* ==================================================================
+   ENGINEERING / SOP
+   Estilos exclusivos de estructura, grids y vistas del módulo.
+   Botones, tablas, campos y estados compartidos viven en /css/styles.css.
+   ================================================================== */
+
+.sop-section,.sop-catalog {
+    width: 100%;
+    min-width: 0;
 }
 
-.sop-section,.sop-catalog{width:100%;min-width:0}
-.sop-section h2,.sop-catalog h2{margin:0 0 6px;font-size:24px;color:var(--sop-ink)}
-.section-header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 20px}
-.section-header p{margin:0;color:var(--sop-muted)}
-#sop-control{margin-bottom:64px}
-.sop-control-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:820px;max-width:100%;min-width:320px;margin:0 auto 18px;max-height:76px;overflow:hidden;border:1px solid var(--sop-line);border-radius:var(--sop-radius);background:var(--sop-panel)}
-.sop-control-tile{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0;min-height:0;max-height:74px;width:100%;padding:14px 20px;background:var(--sop-panel);border:0;border-right:1px solid var(--sop-line);border-bottom:1px solid var(--sop-line);color:var(--sop-ink);text-align:left;font-family:inherit;font-size:16px;font-weight:700;line-height:1.35;cursor:pointer}
-.sop-control-tile span{font-size:16px;font-weight:700;line-height:1.35}
-.sop-control-tile:nth-child(2n){border-right:0}
-.sop-control-grid .sop-control-tile{border-bottom:0}
-.sop-control-tile strong{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-width:36px;height:36px;padding:0 9px;border-radius:999px;background:var(--sop-page);color:var(--sop-accent-dark);font-size:17px}
-.sop-control-tile:hover{background:#f7fcfc}.sop-control-tile.create-sop-button,.sop-control-tile.create-sop-button:hover{background:var(--sop-accent);border-color:var(--sop-accent);color:#fff}.sop-control-tile.create-sop-button:hover{background:var(--sop-accent-dark)}
-.sop-workflow-panel{width:820px;max-width:100%;min-width:320px;max-height:170px;margin:18px auto 0;border:1px solid var(--sop-line);border-radius:var(--sop-radius);overflow:hidden;background:var(--sop-panel)}
-.sop-workflow-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;min-height:0;max-height:88px;padding:14px 20px;border:0;border-bottom:1px solid var(--sop-line);background:var(--sop-panel);color:var(--sop-ink);text-align:left;font:inherit;cursor:pointer}
-.sop-workflow-heading>span:first-child{display:flex;flex-direction:column;gap:5px}
-.sop-workflow-heading strong{font-size:18px;font-weight:700}
-.sop-workflow-heading small{color:var(--sop-muted);font-size:13px}
-.workflow-open-label{color:var(--sop-muted);font-size:13px;font-weight:600}
-.sop-workflow-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-height:74px}
-.sop-workflow-action{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0;min-height:0;max-height:72px;padding:12px 16px;border:0;border-right:1px solid var(--sop-line);background:var(--sop-panel);color:var(--sop-ink);text-align:left;font:inherit;font-weight:700;cursor:pointer}
-.sop-workflow-action:last-child{border-right:0}
-.sop-workflow-action span{font-size:15px;font-weight:700}
-.sop-workflow-action strong{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-width:34px;height:34px;padding:0 9px;border-radius:999px;background:var(--sop-page);color:var(--sop-accent-dark);font-size:16px}
-.sop-workflow-heading:hover,.sop-workflow-action:hover{background:#f7fcfc}
-.sop-catalog{margin:0;min-width:0}
-.sop-catalog .section-header{margin:0 0 20px}
-.catalog-search{margin:18px 0}
-.catalog-search label,.filter-group label{display:block;margin-bottom:6px;font-size:14px;font-weight:600;color:var(--sop-ink)}
-.catalog-search input,.filter-group select,.form-group input,.form-group select,.form-group textarea{box-sizing:border-box;width:100%;padding:10px 12px;border:1px solid #cfd8dc;border-radius:var(--sop-control-radius);background:#fff;color:var(--sop-ink);font-family:inherit;font-size:14px}
-.catalog-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:18px 0}
-.catalog-filter-actions{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
-.catalog-table{width:100%;max-width:100%;height:clamp(280px,calc(100vh - 280px),680px);max-height:clamp(280px,calc(100vh - 280px),680px);min-width:0;overflow:auto;border:1px solid var(--sop-line);border-radius:var(--sop-radius);background:var(--sop-panel);overscroll-behavior:contain}
-#sop-catalog .catalog-table{height:clamp(300px,calc(100vh - 430px),720px);max-height:clamp(300px,calc(100vh - 430px),720px)}
-.catalog-table table{width:100%;min-width:100%;border-collapse:separate;border-spacing:0;table-layout:auto}
-.catalog-table th{position:sticky;top:0;z-index:2;padding:11px 12px;background:#edf5f5;color:var(--sop-ink);border-bottom:1px solid var(--sop-line);border-right:1px solid #c7d7d9;text-align:left;font-weight:700;white-space:nowrap;cursor:pointer;user-select:none}
-.catalog-table th:last-child{border-right:0}
-.catalog-table th[data-sort-direction]::after{content:attr(data-sort-direction);margin-left:6px;color:var(--sop-accent-dark);font-size:11px}
-.catalog-table td{padding:11px 12px;border-bottom:1px solid #e6eaec;white-space:nowrap;vertical-align:middle}
-.catalog-table tbody tr:last-child td{border-bottom:0}
-.catalog-table tbody tr{transition:background-color 140ms ease}
-.catalog-table tbody tr:hover{background:#e8f6f5}
-.catalog-table tbody tr.catalog-clickable-row,.catalog-table tbody tr.workflow-clickable-row{cursor:pointer}
-#sop-catalog .catalog-table th:nth-child(9),#sop-workflow .catalog-table th:nth-child(9),#sop-validation .catalog-table th:nth-child(9),#sop-approval .catalog-table th:nth-child(9){width:220px;min-width:220px;max-width:220px}#sop-drafts .catalog-table th:nth-child(7){width:220px;min-width:220px;max-width:220px}
-#sop-catalog .catalog-table td:nth-child(9),#sop-drafts .catalog-table td:nth-child(7),#sop-workflow .catalog-table td:nth-child(9),#sop-validation .catalog-table td:nth-child(9),#sop-approval .catalog-table td:nth-child(9){width:220px;min-width:220px;max-width:220px;white-space:normal;overflow-wrap:anywhere}
-.form-section{width:min(100%,1050px);box-sizing:border-box;margin:0 auto 20px;padding:24px;border:1px solid var(--sop-line);border-radius:var(--sop-radius);background:var(--sop-panel)}
-#sop-form{width:100%;max-width:1050px;margin:0 auto}
-.form-section h3{margin:0 0 18px;color:var(--sop-ink)}
-.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
-.form-group{display:flex;min-width:0;flex-direction:column}
-.form-group label{margin-bottom:7px;font-size:14px;font-weight:600}
-.form-group textarea{min-height:120px;resize:vertical}
-.form-actions{display:flex;flex-wrap:wrap;gap:10px;width:min(100%,1050px);margin:20px auto 0}
-.sop-view.hidden,.hidden{display:none!important}
-.required-marker{margin-left:3px;color:#dc2626;font-weight:800}
-.sop-validation-alert{margin:0 auto 18px;padding:12px 16px;width:min(100%,1050px);box-sizing:border-box;border:2px dashed #dc2626;border-radius:8px;background:#fff1f2;color:#991b1b}
-.sop-validation-alert h3{margin:0 0 6px;color:#991b1b;font-size:15px}
-.sop-validation-alert ul{margin:6px 0 0;padding-left:22px}
-.sop-validation-alert li+li{margin-top:3px}
-.sop-field-invalid input,.sop-field-invalid select,.sop-field-invalid textarea{border:2px dashed #dc2626!important;outline:none;background:#fff7f7}
-.sop-field-invalid label{color:#b91c1c;font-weight:700}
-.sop-field-error{display:block;margin-top:4px;color:#b91c1c;font-size:12px}
-.status-badge,.revision-badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:700;white-space:nowrap;background:#eef2f7;color:#334155}
-.status-badge.status-in_progress,.status-badge.status-active,.status-badge.status-in_approval,.status-badge.status-approval,.revision-badge.status-in_approval,.revision-badge.status-approval{background:#dbeafe;color:#1d4ed8}
-.status-badge.status-validation,.status-badge.status-in_validation,.revision-badge.status-in_validation{background:#fef3c7;color:#92400e}
-.status-badge.status-completed,.status-badge.status-released{background:#dcfce7;color:#166534}
-.status-badge.status-rejected,.status-badge.status-obsolete{background:#fee2e2;color:#991b1b}
-.workflow-history-list{display:flex;flex-direction:column;gap:12px;padding-left:22px}
-.workflow-history-list li{line-height:1.5}
-.sop-modal{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center}
-.sop-modal.hidden{display:none}
-.sop-modal-overlay{position:absolute;inset:0;background:rgba(0,0,0,.65)}
-.sop-modal-content{position:relative;z-index:1;display:flex;flex-direction:column;overflow:hidden;width:min(1100px,92vw);max-height:85vh;border-radius:var(--sop-radius);background:#fff;box-shadow:0 20px 60px rgba(0,0,0,.3)}
-.sop-modal-header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 24px;border-bottom:1px solid var(--sop-line)}
-.sop-modal-header h2{margin:0}
-.sop-modal-header p{margin:4px 0 0}
-.sop-modal-close{padding:4px 8px;border:0;background:transparent;font-size:28px;line-height:1;cursor:pointer}
-.sop-modal-body{flex:1;overflow-y:auto;padding:24px}
-.sop-modal-footer{display:flex;justify-content:flex-end;padding:16px 24px;border-top:1px solid var(--sop-line)}
-.sop-modal-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
-.sop-modal-field{display:flex;min-width:0;flex-direction:column;gap:4px}
-.sop-modal-field span{color:#666;font-size:13px;font-weight:600}
-.sop-modal-field strong{font-size:15px}
-.sop-modal-field-full{grid-column:1/-1}
-.sop-modal-field-full p{margin:0;line-height:1.5}
-.sop-modal-actions{grid-column:1/-1;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;padding-top:8px}
-.sop-revision-header{margin-bottom:20px}
-.sop-revision-header h3{margin:0}
-.sop-revision-header p{margin:4px 0 0}
-.sop-revision-section{display:flex;flex-direction:column;gap:8px;margin-top:20px}
-.sop-revision-section label{font-weight:600}
-.sop-revision-section textarea,.sop-revision-section input[type=file]{box-sizing:border-box;width:100%}
-.sop-revision-section textarea{resize:vertical}
-.sop-revision-section small{color:#666}
-#sop-drafts .section-search,#sop-drafts .catalog-table{width:min(100%,1200px)}
-#sop-workflow .catalog-table,#sop-validation .catalog-table,#sop-approval .catalog-table{height:clamp(280px,calc(100vh - 270px),720px);max-height:clamp(280px,calc(100vh - 270px),720px)}
-.revision-badge.revision-draft{background:#eef2f7;color:#334155}
-.revision-badge.revision-released{background:#dcfce7;color:#166534}
-.revision-badge.revision-in_approval{background:#dbeafe;color:#1d4ed8}
-.revision-badge.revision-in_validation{background:#fef3c7;color:#92400e}
-.revision-badge.revision-rejected,.revision-badge.revision-obsolete{background:#fee2e2;color:#991b1b}
-.sop-control-tile.create-sop-button{position:relative;z-index:1;pointer-events:auto}
+.sop-section h2,.sop-catalog h2 {
+    margin: 0 0 6px;
+    font-size: 24px;
+    color: var(--color-text);
+}
 
-.workflow-task-table{width:100%;max-width:100%;height:auto;max-height:none;overflow:visible;border:1px solid var(--sop-line);border-radius:var(--sop-radius);background:#fff}
-.workflow-task-table table{width:100%;border-collapse:collapse;table-layout:auto}
-.workflow-task-table th{position:static;white-space:normal;padding:8px 10px;background:#edf5f5;border-bottom:1px solid var(--sop-line);border-right:1px solid #c7d7d9;text-align:left}
-.workflow-task-table td{padding:7px 10px;border-bottom:1px solid #e6eaec;white-space:normal}
-.workflow-review-modal .sop-modal-header h2{font-size:22px}
-.workflow-review-modal .sop-modal-body{overflow-y:auto}
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 0 0 20px;
+}
 
-#workflow-review-modal .sop-modal-header h2{font-size:22px}
-#workflow-review-modal .sop-modal-body{overflow-y:auto}
-#workflow-review-modal .workflow-task-table{height:auto;max-height:none;overflow:visible}
+.section-header p {
+    margin: 0;
+    color: var(--color-text-muted);
+}
 
-.revision-badge.revision-discarded,.status-badge.status-discarded{background:#e5e7eb;color:#374151}.sop-draft-candidate{margin-top:16px;padding:16px;border:1px solid var(--line);border-radius:8px;background:#fffdf5}.sop-draft-candidate h3{margin:0 0 10px}.sop-draft-candidate p{margin:8px 0}
+#sop-control {
+    margin-bottom: 64px;
+}
 
-@media(max-width:640px){.sop-control-grid{grid-template-columns:1fr;width:100%;min-width:0;max-height:none}.sop-control-grid .sop-control-tile{min-height:58px;max-height:58px;border-right:0;border-bottom:1px solid var(--sop-line)}.sop-control-grid .sop-control-tile:last-child{border-bottom:0}.sop-workflow-panel{width:100%;min-width:0;max-height:none}.sop-workflow-heading{align-items:flex-start;flex-direction:column;gap:8px;max-height:none}.sop-workflow-actions{grid-template-columns:1fr;max-height:none}.sop-workflow-action{min-height:56px;max-height:56px;border-right:0;border-bottom:1px solid var(--sop-line)}.sop-workflow-action:last-child{border-bottom:0}.sop-workflow-action span{font-size:14px}}
+.sop-control-grid {
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    width: 820px;
+    max-width: 100%;
+    min-width: 320px;
+    margin: 0 auto 18px;
+    max-height: 76px;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+}
+
+.sop-control-tile {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+    min-height: 0;
+    max-height: 74px;
+    width: 100%;
+    padding: 14px 20px;
+    background: var(--color-surface);
+    border: 0;
+    border-right: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text);
+    text-align: left;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.35;
+    cursor: pointer;
+}
+
+.sop-control-tile span {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.sop-control-tile:nth-child(2n) {
+    border-right: 0;
+}
+
+.sop-control-grid .sop-control-tile {
+    border-bottom: 0;
+}
+
+.sop-control-tile strong {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 9px;
+    border-radius: 999px;
+    background: var(--color-base);
+    color: var(--color-accent-hover);
+    font-size: 17px;
+}
+
+.sop-control-tile:hover {
+    background: var(--color-lt);
+}
+
+.sop-control-tile.create-sop-button,.sop-control-tile.create-sop-button:hover {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: var(--color-surface);
+}
+
+.sop-control-tile.create-sop-button:hover {
+    background: var(--color-accent-hover);
+}
+
+.sop-workflow-panel {
+    width: 820px;
+    max-width: 100%;
+    min-width: 320px;
+    max-height: 170px;
+    margin: 18px auto 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--color-surface);
+}
+
+.sop-workflow-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    width: 100%;
+    min-height: 0;
+    max-height: 88px;
+    padding: 14px 20px;
+    border: 0;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+    text-align: left;
+    font: inherit;
+    cursor: pointer;
+}
+
+.sop-workflow-heading>span:first-child {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.sop-workflow-heading strong {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.sop-workflow-heading small {
+    color: var(--color-text-muted);
+    font-size: 13px;
+}
+
+.workflow-open-label {
+    color: var(--color-text-muted);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.sop-workflow-actions {
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    max-height: 74px;
+}
+
+.sop-workflow-action {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+    min-height: 0;
+    max-height: 72px;
+    padding: 12px 16px;
+    border: 0;
+    border-right: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+    text-align: left;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.sop-workflow-action:last-child {
+    border-right: 0;
+}
+
+.sop-workflow-action span {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.sop-workflow-action strong {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    min-width: 34px;
+    height: 34px;
+    padding: 0 9px;
+    border-radius: 999px;
+    background: var(--color-base);
+    color: var(--color-accent-hover);
+    font-size: 16px;
+}
+
+.sop-workflow-heading:hover,.sop-workflow-action:hover {
+    background: var(--color-lt);
+}
+
+.sop-catalog {
+    margin: 0;
+    min-width: 0;
+}
+
+.sop-catalog .section-header {
+    margin: 0 0 20px;
+}
+
+.catalog-search {
+    width: min(100%, 560px);
+    margin: 18px 0 20px;
+}
+
+.catalog-search label,
+.filter-group label {
+    display: block;
+    margin-bottom: 7px;
+    color: var(--color-secondary);
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.catalog-search input {
+    width: 100%;
+}
+
+.catalog-filters {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(180px, 1fr));
+    gap: 16px 20px;
+    margin: 20px 0;
+}
+
+.filter-group {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+}
+
+.filter-group select {
+    width: 100%;
+    min-width: 0;
+}
+
+.catalog-filter-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin: 18px 0 16px;
+}
+
+.catalog-table {
+    width: 100%;
+    max-width: 100%;
+    height: clamp(280px,calc(100vh - 280px),680px);
+    max-height: clamp(280px,calc(100vh - 280px),680px);
+    min-width: 0;
+    overflow: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    overscroll-behavior: contain;
+}
+
+#sop-catalog .catalog-table {
+    height: clamp(300px,calc(100vh - 430px),720px);
+    max-height: clamp(300px,calc(100vh - 430px),720px);
+}
+
+.catalog-table table {
+    width: 100%;
+    min-width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: auto;
+}
+
+.catalog-table th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 11px 12px;
+    background: var(--color-surface-alt);
+    color: var(--color-text);
+    border-bottom: 1px solid var(--color-border);
+    border-right: 1px solid var(--color-border-strong);
+    text-align: left;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+}
+
+.catalog-table th:last-child {
+    border-right: 0;
+}
+
+.catalog-table th[data-sort-direction]::after {
+    content: attr(data-sort-direction);
+    margin-left: 6px;
+    color: var(--color-accent-hover);
+    font-size: 11px;
+}
+
+.catalog-table td {
+    padding: 11px 12px;
+    border-bottom: 1px solid var(--color-divider);
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.catalog-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.catalog-table tbody tr {
+    transition: background-color 140ms ease;
+}
+
+.catalog-table tbody tr:hover {
+    background: var(--color-lt);
+}
+
+.catalog-table tbody tr.catalog-clickable-row,.catalog-table tbody tr.workflow-clickable-row {
+    cursor: pointer;
+}
+
+#sop-catalog .catalog-table th:nth-child(9),#sop-workflow .catalog-table th:nth-child(9),#sop-validation .catalog-table th:nth-child(9),#sop-approval .catalog-table th:nth-child(9) {
+    width: 220px;
+    min-width: 220px;
+    max-width: 220px;
+}
+
+#sop-drafts .catalog-table th:nth-child(7) {
+    width: 220px;
+    min-width: 220px;
+    max-width: 220px;
+}
+
+#sop-catalog .catalog-table td:nth-child(9),#sop-drafts .catalog-table td:nth-child(7),#sop-workflow .catalog-table td:nth-child(9),#sop-validation .catalog-table td:nth-child(9),#sop-approval .catalog-table td:nth-child(9) {
+    width: 220px;
+    min-width: 220px;
+    max-width: 220px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.form-section {
+    width: min(100%,1050px);
+    box-sizing: border-box;
+    margin: 0 auto 20px;
+    padding: 24px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+}
+
+#sop-form {
+    width: 100%;
+    max-width: 1050px;
+    margin: 0 auto;
+}
+
+.form-section h3 {
+    margin: 0 0 18px;
+    color: var(--color-text);
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+}
+
+.form-group label {
+    margin-bottom: 7px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.form-group textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    width: min(100%,1050px);
+    margin: 20px auto 0;
+}
+
+.sop-view.hidden,.hidden {
+    display: none!important;
+}
+
+.required-marker {
+    margin-left: 3px;
+    color: var(--color-danger);
+    font-weight: 800;
+}
+
+.sop-validation-alert {
+    margin: 0 auto 18px;
+    padding: 12px 16px;
+    width: min(100%,1050px);
+    box-sizing: border-box;
+    border: 2px dashed var(--color-danger);
+    border-radius: 8px;
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+}
+
+.sop-validation-alert h3 {
+    margin: 0 0 6px;
+    color: var(--color-danger);
+    font-size: 15px;
+}
+
+.sop-validation-alert ul {
+    margin: 6px 0 0;
+    padding-left: 22px;
+}
+
+.sop-validation-alert li+li {
+    margin-top: 3px;
+}
+
+.sop-field-invalid input,.sop-field-invalid select,.sop-field-invalid textarea {
+    border: 2px dashed var(--color-danger)!important;
+    outline: none;
+    background: var(--color-danger-bg);
+}
+
+.sop-field-invalid label {
+    color: var(--color-danger);
+    font-weight: 700;
+}
+
+.sop-field-error {
+    display: block;
+    margin-top: 4px;
+    color: var(--color-danger);
+    font-size: 12px;
+}
+
+.workflow-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-left: 22px;
+}
+
+.workflow-history-list li {
+    line-height: 1.5;
+}
+
+.sop-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sop-modal.hidden {
+    display: none;
+}
+
+.sop-modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,.65);
+}
+
+.sop-modal-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    width: min(1100px,92vw);
+    max-height: 85vh;
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    box-shadow: 0 20px 60px rgba(0,0,0,.3);
+}
+
+.sop-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.sop-modal-header h2 {
+    margin: 0;
+}
+
+.sop-modal-header p {
+    margin: 4px 0 0;
+}
+
+.sop-modal-close {
+    padding: 4px 8px;
+    border: 0;
+    background: transparent;
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.sop-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+}
+
+.sop-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 16px 24px;
+    border-top: 1px solid var(--color-border);
+}
+
+.sop-modal-grid {
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    gap: 16px;
+}
+
+.sop-modal-field {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.sop-modal-field span {
+    color: var(--color-text-muted);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.sop-modal-field strong {
+    font-size: 15px;
+}
+
+.sop-modal-field-full {
+    grid-column: 1/-1;
+}
+
+.sop-modal-field-full p {
+    margin: 0;
+    line-height: 1.5;
+}
+
+.sop-modal-actions {
+    grid-column: 1/-1;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 8px;
+}
+
+.sop-revision-header {
+    margin-bottom: 20px;
+}
+
+.sop-revision-header h3 {
+    margin: 0;
+}
+
+.sop-revision-header p {
+    margin: 4px 0 0;
+}
+
+.sop-revision-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 20px;
+}
+
+.sop-revision-section label {
+    font-weight: 600;
+}
+
+.sop-revision-section textarea,.sop-revision-section input[type=file] {
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.sop-revision-section textarea {
+    resize: vertical;
+}
+
+.sop-revision-section small {
+    color: var(--color-text-muted);
+}
+
+#sop-drafts .section-search,#sop-drafts .catalog-table {
+    width: min(100%,1200px);
+}
+
+#sop-workflow .catalog-table,#sop-validation .catalog-table,#sop-approval .catalog-table {
+    height: clamp(280px,calc(100vh - 270px),720px);
+    max-height: clamp(280px,calc(100vh - 270px),720px);
+}
+
+.revision-badge.revision-draft {
+    background: var(--color-surface-alt);
+    color: var(--color-text-muted);
+}
+
+.sop-control-tile.create-sop-button {
+    position: relative;
+    z-index: 1;
+    pointer-events: auto;
+}
+
+.workflow-task-table {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+}
+
+.workflow-task-table table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: auto;
+}
+
+.workflow-task-table th {
+    position: static;
+    white-space: normal;
+    padding: 8px 10px;
+    background: var(--color-surface-alt);
+    border-bottom: 1px solid var(--color-border);
+    border-right: 1px solid var(--color-border-strong);
+    text-align: left;
+}
+
+.workflow-task-table td {
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--color-divider);
+    white-space: normal;
+}
+
+.workflow-review-modal .sop-modal-header h2 {
+    font-size: 22px;
+}
+
+.workflow-review-modal .sop-modal-body {
+    overflow-y: auto;
+}
+
+#workflow-review-modal .sop-modal-header h2 {
+    font-size: 22px;
+}
+
+#workflow-review-modal .sop-modal-body {
+    overflow-y: auto;
+}
+
+#workflow-review-modal .workflow-task-table {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+}
+
+.revision-badge.revision-discarded,.status-badge.status-discarded {
+    background: var(--color-disabled-bg);
+    color: var(--color-text-muted);
+}
+
+.sop-draft-candidate {
+    margin-top: 16px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--color-warning-bg);
+}
+
+.sop-draft-candidate h3 {
+    margin: 0 0 10px;
+}
+
+.sop-draft-candidate p {
+    margin: 8px 0;
+}
+
+@media(max-width:1100px) {
+    .catalog-filters {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media(max-width:800px) {
+    .catalog-filters {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media(max-width:640px) {
+    .catalog-search {
+        width: 100%;
+    }
+
+    .catalog-filters {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .sop-control-grid {
+        grid-template-columns: 1fr;
+        width: 100%;
+        min-width: 0;
+        max-height: none;
+    }
+
+    .sop-control-grid .sop-control-tile {
+        min-height: 58px;
+        max-height: 58px;
+        border-right: 0;
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .sop-control-grid .sop-control-tile:last-child {
+        border-bottom: 0;
+    }
+
+    .sop-workflow-panel {
+        width: 100%;
+        min-width: 0;
+        max-height: none;
+    }
+
+    .sop-workflow-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+        max-height: none;
+    }
+
+    .sop-workflow-actions {
+        grid-template-columns: 1fr;
+        max-height: none;
+    }
+
+    .sop-workflow-action {
+        min-height: 56px;
+        max-height: 56px;
+        border-right: 0;
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .sop-workflow-action:last-child {
+        border-bottom: 0;
+    }
+
+    .sop-workflow-action span {
+        font-size: 14px;
+    }
+
+}

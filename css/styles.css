@@ -1,0 +1,742 @@
+/* ==================================================================
+   HIMEX-PMP / GLOBAL DESIGN SYSTEM
+   Paleta cromática basada en Color Lab.
+   Regla orientativa: 60% base / 30% secundario / 10% acento.
+   ================================================================== */
+
+:root {
+    /* PALETA PRINCIPAL */
+    --color-base: #F5F5F5;
+    --color-secondary: #123746;
+    --color-accent: #009a9d;
+    --color-lt: #EFF9F9;
+
+    /* SUPERFICIES */
+    --color-surface: #FFFFFF;
+    --color-surface-alt: #E8EDF1;
+    --color-surface-inverse: #102638;
+
+    /* TEXTO */
+    --color-text: #1D2935;
+    --color-text-muted: #697887;
+    --color-text-on-dark: #F7FAFC;
+    --color-text-on-accent: #FFFFFF;
+
+    /* BORDES Y SEPARADORES */
+    --color-border: #DDDDDD;
+    --color-border-strong: #AAB8C5;
+    --color-divider: #E5EAF0;
+
+    /* ESTADOS */
+    --color-success: #23845B;
+    --color-success-bg: #E7F4EC;
+    --color-warning: #C78321;
+    --color-warning-bg: #FFF3DC;
+    --color-danger: #C44949;
+    --color-danger-bg: #FCEAEA;
+    --color-info: #3479A8;
+    --color-info-bg: #E8F2FA;
+
+    /* INTERACCIÓN */
+    --color-accent-hover: #108985;
+    --color-secondary-hover: #244762;
+    --color-danger-hover: #FAE1E1;
+    --color-focus: #4D9FE8;
+    --color-disabled-bg: #E5E9ED;
+    --color-disabled-text: #9AA5AF;
+
+    /* TIPOGRAFÍA, FORMA Y ESPACIADO */
+    --font-family: Inter, "Segoe UI", Arial, sans-serif;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --shadow-sm: 0 2px 8px rgba(16, 38, 56, .06);
+    --shadow-md: 0 12px 28px rgba(16, 38, 56, .10);
+    --content-width: 1240px;
+
+    /* ALIAS DE COMPATIBILIDAD PARA MÓDULOS EXISTENTES */
+    --hisense: var(--color-accent);
+    --hisense-dark: var(--color-accent-hover);
+    --hisense-bg: var(--color-secondary);
+    --hisense-soft: var(--color-lt);
+    --app-bg: var(--color-base);
+    --ink: var(--color-text);
+    --muted: var(--color-text-muted);
+    --line: var(--color-border);
+    --panel: var(--color-surface);
+    --page: var(--color-base);
+    --shadow: var(--shadow-md);
+    --surface-color: var(--color-surface);
+    --border-color: var(--color-border);
+}
+
+/* ========================== BASE ========================== */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    width: 100%;
+    min-height: 100%;
+    scroll-behavior: smooth;
+}
+
+body {
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    margin: 0;
+    background: var(--color-base);
+    color: var(--color-text);
+    font-family: var(--font-family);
+    font-size: 14px;
+    line-height: 1.55;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+}
+
+button {
+    color: inherit;
+}
+
+a {
+    color: var(--color-accent);
+    text-decoration: none;
+}
+
+a:hover {
+    color: var(--color-accent-hover);
+    text-decoration: underline;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 3px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+    margin-top: 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: var(--color-secondary);
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+h1 {
+    margin-bottom: 18px;
+    font-size: clamp(2rem, 4vw, 2.75rem);
+    letter-spacing: -.04em;
+}
+
+h2 {
+    margin-bottom: 14px;
+    font-size: 1.7rem;
+    letter-spacing: -.025em;
+}
+
+h3 {
+    margin-bottom: 9px;
+    font-size: 1.15rem;
+}
+
+h4 {
+    margin-bottom: 7px;
+    font-size: 1rem;
+}
+
+p {
+    color: var(--color-text);
+}
+
+strong,
+b {
+    color: inherit;
+    font-weight: 700;
+}
+
+small {
+    color: var(--color-text-muted);
+}
+
+code,
+kbd,
+pre {
+    font-family: "SFMono-Regular", Consolas, monospace;
+}
+
+code {
+    color: var(--color-text-muted);
+    font-size: .85em;
+}
+
+/* ========================== APPLICATION LAYOUT ========================== */
+
+.app {
+    display: flex;
+    min-height: 100vh;
+    min-height: 100dvh;
+}
+
+.main-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.content {
+    width: 100%;
+    min-width: 0;
+    padding: 30px;
+}
+
+.content > h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 3px 5px 18px;
+}
+
+.brand-mark {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    background: var(--color-accent);
+    color: var(--color-text-on-accent);
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: .02em;
+}
+
+.brand-name {
+    color: var(--color-secondary);
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: .05em;
+}
+
+.brand-caption {
+    margin-top: 3px;
+    color: var(--color-text-muted);
+    font-size: 11px;
+}
+
+/* ========================== SHARED BUTTONS ========================== */
+
+.primary-button,
+.secondary-button,
+.danger-button,
+.remark-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 38px;
+    padding: 8px 14px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.25;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.primary-button {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+    color: var(--color-text-on-accent);
+}
+
+.primary-button:hover:not(:disabled) {
+    border-color: var(--color-accent-hover);
+    background: var(--color-accent-hover);
+    color: var(--color-text-on-accent);
+    text-decoration: none;
+}
+
+.secondary-button {
+    border-color: var(--color-border-strong);
+    background: var(--color-surface);
+    color: var(--color-secondary);
+}
+
+.secondary-button:hover:not(:disabled) {
+    border-color: var(--color-secondary);
+    background: var(--color-surface-alt);
+    color: var(--color-secondary);
+}
+
+.danger-button,
+.remark-button {
+    border-color: var(--color-danger);
+    background: var(--color-surface);
+    color: var(--color-danger);
+}
+
+.danger-button:hover:not(:disabled),
+.remark-button:hover:not(:disabled) {
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+}
+
+.primary-button:disabled,
+.secondary-button:disabled,
+.danger-button:disabled,
+.remark-button:disabled,
+button:disabled {
+    border-color: var(--color-disabled-bg);
+    background: var(--color-disabled-bg);
+    color: var(--color-disabled-text);
+    cursor: not-allowed;
+    opacity: .8;
+}
+
+/* ========================== SHARED PANELS AND TILES ========================== */
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.dashboard-card {
+    display: block;
+    min-width: 0;
+    padding: 20px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    color: inherit;
+    text-align: left;
+    text-decoration: none;
+    transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.dashboard-card:hover {
+    border-color: var(--color-accent);
+    box-shadow: var(--shadow-sm);
+    color: inherit;
+    text-decoration: none;
+    transform: translateY(-2px);
+}
+
+.dashboard-card h3 {
+    margin: 0 0 8px;
+    color: var(--color-secondary);
+    font-size: 20px;
+}
+
+.dashboard-card p {
+    margin-bottom: 0;
+    color: var(--color-text-muted);
+    font-size: 13px;
+}
+
+.document-status {
+    display: flex;
+    gap: 15px;
+}
+
+.document-status > div {
+    display: flex;
+    flex: 1;
+    justify-content: space-between;
+    padding: 20px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+}
+
+.document-status strong {
+    font-size: 24px;
+}
+
+/* ========================== SHARED TABLES ========================== */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    color: var(--color-text);
+}
+
+thead th {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--color-border-strong);
+    background: var(--color-surface-alt);
+    color: var(--color-text-muted);
+    font-size: 12px;
+    font-weight: 700;
+    text-align: left;
+    vertical-align: middle;
+}
+
+tbody td {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--color-divider);
+    color: var(--color-text);
+    font-size: 13px;
+    text-align: left;
+    vertical-align: middle;
+}
+
+tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+table tbody tr {
+    transition: background-color 160ms ease, box-shadow 160ms ease;
+}
+
+table tbody tr:hover {
+    background: var(--color-lt);
+}
+
+table tbody tr:has(button, a, [role="button"], [data-action]) {
+    cursor: pointer;
+}
+
+table tbody tr:has(button, a, [role="button"], [data-action]):hover {
+    box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+/* ========================== SHARED TABLE AND FORM CONTAINERS ========================== */
+
+.table-container,
+.table-wrap {
+    width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+}
+
+.form-group label {
+    color: var(--color-text);
+    font-weight: 600;
+}
+
+input,
+select,
+textarea {
+    accent-color: var(--color-accent);
+}
+
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+    width: 100%;
+    min-height: 40px;
+    padding: 9px 12px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font: inherit;
+    line-height: 1.35;
+    transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+select {
+    padding-right: 34px;
+    cursor: pointer;
+}
+
+textarea {
+    min-height: 110px;
+    resize: vertical;
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: var(--color-text-muted);
+    opacity: .8;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):hover,
+select:hover,
+textarea:hover {
+    border-color: var(--color-accent);
+}
+
+input:not([type="checkbox"]):not([type="radio"]):focus,
+select:focus,
+textarea:focus {
+    border-color: var(--color-accent);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 154, 157, .14);
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+    border-color: var(--color-disabled-bg);
+    background: var(--color-disabled-bg);
+    color: var(--color-disabled-text);
+    cursor: not-allowed;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+input[type="file"] {
+    min-height: auto;
+    padding: 8px;
+    background: var(--color-surface);
+}
+
+/* ========================== SHARED MODALS ========================== */
+
+.modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(16, 38, 56, .58);
+}
+
+.modal-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    width: min(900px, calc(100% - 40px));
+    max-height: calc(100vh - 40px);
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-md);
+}
+
+.modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.modal-header h2 {
+    margin: 0;
+}
+
+.modal-header p {
+    margin: 5px 0 0;
+    color: var(--color-text-muted);
+}
+
+.modal-close,
+.modal-header button {
+    border: 0;
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.modal-close:hover,
+.modal-header button:hover {
+    color: var(--color-text);
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 18px 24px;
+    margin-top: 20px;
+    border-top: 1px solid var(--color-border);
+}
+
+/* ========================== STATUS AND FEEDBACK ========================== */
+
+.status-badge,
+.revision-badge,
+.role-status,
+.user-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: var(--color-surface-alt);
+    color: var(--color-text-muted);
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.status-badge.status-completed,
+.status-badge.status-released,
+.revision-badge.revision-released,
+.role-status.active,
+.user-status.active {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+}
+
+.status-badge.status-validation,
+.status-badge.status-in_validation,
+.revision-badge.status-in_validation,
+.revision-badge.revision-in_validation {
+    background: var(--color-warning-bg);
+    color: var(--color-warning);
+}
+
+.status-badge.status-in_progress,
+.status-badge.status-active,
+.status-badge.status-in_approval,
+.status-badge.status-approval,
+.revision-badge.status-in_approval,
+.revision-badge.status-approval,
+.revision-badge.revision-in_approval {
+    background: var(--color-info-bg);
+    color: var(--color-info);
+}
+
+.status-badge.status-rejected,
+.status-badge.status-obsolete,
+.revision-badge.revision-rejected,
+.revision-badge.revision-obsolete,
+.role-status.inactive,
+.user-status.inactive {
+    background: var(--color-danger-bg);
+    color: var(--color-danger);
+}
+
+.status-badge.status-discarded,
+.revision-badge.revision-discarded {
+    background: var(--color-disabled-bg);
+    color: #586574;
+}
+
+.form-message.error {
+    color: var(--color-danger);
+}
+
+.form-message.success {
+    color: var(--color-success);
+}
+
+body.auth-pending .app {
+    visibility: visible;
+}
+
+body.auth-pending::before {
+    content: "Loading...";
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: grid;
+    place-items: center;
+    background: var(--color-base);
+    color: var(--color-text);
+    font-family: var(--font-family);
+}
+
+/* ========================== RESPONSIVE ========================== */
+
+@media (max-width: 900px) {
+    .content {
+        padding: 24px;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 600px) {
+    .content {
+        padding: 18px;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .document-status {
+        flex-direction: column;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+    }
+}
+
+/* ========================== GENERAL MODAL VARIANTS ========================== */
+
+.modal-content {
+    padding: 0;
+}
+
+#user-actions-modal .user-actions-modal-content {
+    width: min(760px, calc(100% - 32px));
+}
+
+/* ========================== GENERAL STATUS ELEMENTS ========================== */
+
+.role-status {
+    color: var(--color-text-muted);
+    font-size: 13px;
+}
+
+.role-status.inactive {
+    color: var(--color-danger);
+}
