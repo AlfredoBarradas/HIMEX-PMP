@@ -276,10 +276,6 @@
     max-height: clamp(280px,calc(100vh - 280px),680px);
     min-width: 0;
     overflow: auto;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    background: var(--color-surface);
-    overscroll-behavior: contain;
 }
 
 #sop-catalog .catalog-table {
@@ -299,20 +295,8 @@
     position: sticky;
     top: 0;
     z-index: 2;
-    padding: 11px 12px;
-    background: var(--color-surface-alt);
-    color: var(--color-text);
-    border-bottom: 1px solid var(--color-border);
-    border-right: 1px solid var(--color-border-strong);
-    text-align: left;
-    font-weight: 700;
-    white-space: nowrap;
     cursor: pointer;
     user-select: none;
-}
-
-.catalog-table th:last-child {
-    border-right: 0;
 }
 
 .catalog-table th[data-sort-direction]::after {
@@ -323,22 +307,7 @@
 }
 
 .catalog-table td {
-    padding: 11px 12px;
-    border-bottom: 1px solid var(--color-divider);
     white-space: nowrap;
-    vertical-align: middle;
-}
-
-.catalog-table tbody tr:last-child td {
-    border-bottom: 0;
-}
-
-.catalog-table tbody tr {
-    transition: background-color 140ms ease;
-}
-
-.catalog-table tbody tr:hover {
-    background: var(--color-lt);
 }
 
 .catalog-table tbody tr.catalog-clickable-row,.catalog-table tbody tr.workflow-clickable-row {
