@@ -1,6 +1,9 @@
+/* AUTHENTICATION / LOGIN */
+
 /* ========================================
    PMP Management Center - Authentication
    ======================================== */
+
 .auth-container {
     margin: 0;
     box-sizing: border-box;
@@ -11,9 +14,10 @@
     min-height: 100dvh;
     padding: 5px;
     background-color: var(--hisense-bg);
-    color: #ccc;
+    color: var(--color-text-on-dark);
     font-family: "Segoe UI", Arial, sans-serif;
 }
+
 .auth-container *,
 .auth-container *::before,
 .auth-container *::after {
@@ -35,14 +39,13 @@
 .brand-name {
     font-size: 25px;
     letter-spacing: 0px;
-    color: #eee;
+    color: var(--color-text-on-dark);
 }
 
 .brand-caption {
     font-size: 15px;
-    color: #B6D0D4;
+    color: #D5E2E7;
 }
-
 
 .auth-card {
     width: 100%;
@@ -52,27 +55,31 @@
 }
 
 /* Form layout */
+
 .auth-card form {
     display: flex;
     flex-direction: column;
     gap: 20px;
 }
+
 .auth-card .form-group {
     display: flex;
     flex-direction: column;
     gap: 8px;
     margin: 0;
 }
+
 .auth-card label {
-    color: #B6D0D4;
+    color: #D5E2E7;
     font-size: 13px;
     font-weight: 600;
 }
+
 .auth-card input {
     width: 100%;
     min-height: 46px;
     padding: 12px 14px;
-    color: #B6D0D4;
+    color: #D5E2E7;
     background: #203F49;
     border: 1px solid #41616A;
     border-radius: 8px;
@@ -81,14 +88,18 @@
     font-size: 14px;
     transition: border-color 160ms ease, box-shadow 160ms ease;
 }
+
 .auth-card input:hover {
-    border-color: #9aabc2;
+    border-color: var(--color-border-strong);
 }
+
 .auth-card input:focus {
-    border-color: #2864c5;
+    border-color: var(--color-focus);
     box-shadow: 0 0 0 3px rgba(40, 100, 197, 0.13);
 }
+
 /* Primary action */
+
 .auth-card .primary-button {
     width: 100%;
     min-height: 47px;
@@ -104,38 +115,46 @@
     transition: background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
     box-shadow: var(--shadow);
 }
+
 .auth-card .primary-button:hover:not(:disabled) {
     background: var(--hisense-dark);
     box-shadow: var(--shadow);
 }
+
 .auth-card .primary-button:active:not(:disabled) {
     transform: translateY(1px);
 }
+
 .auth-card .primary-button:disabled {
     opacity: 0.65;
     cursor: wait;
     box-shadow: none;
 }
+
 /* Feedback */
+
 .auth-message {
     margin: 0;
-    color: #f86f66;
+    color: var(--color-danger);
     font-size: 13px;
     line-height: 1.5;
     white-space: pre-line;
     justify-content: center;
 }
+
 .auth-message:empty {
     display: none;
 }
+
 /* Secondary actions */
+
 .auth-card .secondary-button {
     width: 100%;
     min-height: 44px;
     padding: 10px 16px;
-    color: #344054;
-    background: #ffffff;
-    border: 1px solid #cfd8e5;
+    color: var(--color-secondary);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border-strong);
     border-radius: 8px;
     font-family: inherit;
     font-size: 14px;
@@ -143,32 +162,42 @@
     cursor: pointer;
     transition: background 160ms ease, border-color 160ms ease;
 }
+
 .auth-card .secondary-button:hover:not(:disabled) {
-    background: #f3f6fb;
-    border-color: #9aabc2;
+    background: var(--color-surface-alt);
+    border-color: var(--color-border-strong);
 }
+
 .auth-card .secondary-button:disabled {
     opacity: 0.65;
     cursor: wait;
 }
+
 /* Keyboard accessibility */
+
 .auth-card button:focus-visible {
     outline: 3px solid rgba(40, 100, 197, 0.35);
     outline-offset: 3px;
 }
+
 /* Mobile */
+
 @media (max-width: 480px) {
     .auth-container {
         padding: 20px 14px;
     }
+
     .auth-card {
         padding: 28px 22px;
         border-radius: 12px;
     }
+
     .auth-header {
         margin-bottom: 28px;
     }
+
     .auth-header h1 {
         font-size: 36px;
     }
+
 }
