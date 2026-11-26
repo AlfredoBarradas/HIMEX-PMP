@@ -37,6 +37,7 @@ async function requireAuth() {
 
             // 2. Require an authenticated user
             if (!authData?.user) {
+                console.log("test")
                 return redirectTo("/auth/");
             }
 

@@ -106,11 +106,7 @@ async function initializePartInfoPage() {
 
     if (!authData?.user) {
         window.location.replace("/auth/");
-        return;
-    }
-
-    if (!isAdmin()) {
-        window.location.replace("/");
+        console.log("test de partinfo")
         return;
     }
 

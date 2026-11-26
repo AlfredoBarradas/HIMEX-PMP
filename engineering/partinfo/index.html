@@ -11,10 +11,11 @@
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="/components/sidebar/sidebar.css">
     <link rel="stylesheet" href="/components/topbar/topbar.css">
+    <link rel="stylesheet" href="./part.css">
 </head>
 
 <body 
-data-page="partinfo" 
+data-page="partsPage" 
 data-page-title="Part Numbers" 
 data-page-description="Standar information"
 class="auth-pending">
@@ -30,7 +31,7 @@ class="auth-pending">
                 
                 <!-- Header -->
                 <section class="section-header-pn">
-                    <div>
+                    <div class="menu-header">
                         <div>
                             <h2>PMP INJECTION & STAMPING</h2>
                             <strong>Part Number Standard</strong>
@@ -41,10 +42,10 @@ class="auth-pending">
                     </div>
                 </section>
                 <!-- Menu -->
-                <section class="section-menu-pn">
-                    <div>
-                        <div><button type="button" id="create-pn-button" class="primary-button">Create New Part Number</button></div>
-                        <div><button type="button" id="update-pn-button" class="secondary-button">Update Part Number</button></div>
+                <section class="section-menu">
+                    <div class="menu-grid">
+                        <div class="menu-group"><button type="button" id="create-pn-button" class="primary-button">Create New Part Number</button></div>
+                        <div class="menu-group"><button type="button" id="update-pn-button" class="secondary-button">Update Part Number</button></div>
                     </div>
                 </section>
                 <!-- Filters -->
