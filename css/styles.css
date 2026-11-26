@@ -52,7 +52,7 @@
     --radius-lg: 16px;
     --shadow-sm: 0 2px 8px rgba(16, 38, 56, .06);
     --shadow-md: 0 12px 28px rgba(16, 38, 56, .10);
-    --content-width: 1240px;
+    --content-width: 1400px;
 
     /* ALIAS DE COMPATIBILIDAD PARA MÓDULOS EXISTENTES */
     --hisense: var(--color-accent);
