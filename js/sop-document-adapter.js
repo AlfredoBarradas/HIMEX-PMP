@@ -3,7 +3,7 @@
  * Storage contract: documents / document_revisions.
  * Presentation contract: legacy SOP-shaped objects consumed by the current SOP UI.
  */
-window.DocumentData = (() => {
+window.SopDocumentAdapter = (() => {
     const DOCUMENT_TYPE = "sop";
     const DOCUMENT_SELECT = `
         id,
@@ -125,12 +125,14 @@ window.DocumentData = (() => {
     }
 
     async function getSopDocuments({ids = null, id = null} = {}) {
-        let query = supabaseClient.from("documents").select(DOCUMENT_SELECT).eq("document_type_code", DOCUMENT_TYPE).order("created_at", {ascending: false});
-        if (id !== null) query = query.eq("id", id).single();
-        else if (Array.isArray(ids) && ids.length) query = query.in("id", ids);
-        else if (Array.isArray(ids) && !ids.length) return {data: [], error: null};
-
-        const {data, error} = await query;
+        const {data, error} = await DocumentService.listDocuments({
+            documentTypeCode: DOCUMENT_TYPE,
+            ids,
+            id,
+            select: DOCUMENT_SELECT,
+            orderBy: "created_at",
+            ascending: false
+        });
         if (error) return {data: null, error};
         try {
             const hydrated = await enrichSopDocuments(id !== null ? [data] : (data || []));
@@ -142,9 +144,10 @@ window.DocumentData = (() => {
 
     async function getSopRevisionsByIds(ids = []) {
         if (!ids.length) return {data: [], error: null};
-        const {data, error} = await supabaseClient.from("document_revisions")
-            .select("id,document_id,revision_number,revision_code,status,description,created_by,created_at,released_at,metadata")
-            .in("id", ids);
+        const {data, error} = await DocumentService.listRevisions({
+            ids,
+            select: "id,document_id,revision_number,revision_code,status,description,created_by,created_at,released_at,metadata"
+        });
         if (error) return {data: null, error};
         return {
             data: (data || []).map(row => ({
@@ -160,11 +163,12 @@ window.DocumentData = (() => {
     }
 
     async function getSopRevisionByCode(documentId, revisionCode) {
-        const {data, error} = await supabaseClient.from("document_revisions")
-            .select("id,document_id,revision_number,revision_code,status,description,created_by,created_at,released_at,metadata")
-            .eq("document_id", documentId)
-            .eq("revision_code", revisionCode)
-            .single();
+        const {data, error} = await DocumentService.listRevisions({
+            documentId,
+            revisionCode,
+            select: "id,document_id,revision_number,revision_code,status,description,created_by,created_at,released_at,metadata",
+            single: true
+        });
         if (error) return {data: null, error};
         return {
             data: {

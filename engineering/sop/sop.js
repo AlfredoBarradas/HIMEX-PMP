@@ -208,7 +208,7 @@ async function initializeSopPage() {
         const modalBody = document.querySelector(".sop-modal-body");
         modalBody.innerHTML = "<p>Loading...</p>";
         openSopModal();
-        const { data, error } = await DocumentData.getSopDocuments({id: Number(sopId)});
+        const { data, error } = await SopDocumentAdapter.getSopDocuments({id: Number(sopId)});
         if (error) {
             console.error("Error loading SOP:", error);
             modalBody.innerHTML = 
@@ -718,7 +718,7 @@ async function initializeSopPage() {
                 body.innerHTML = '<tr><td colspan="8">Please sign in to view your drafts.</td></tr>';
                 return;
             }
-            const { data: drafts, error: revisionError } = await DocumentData.getMySopDrafts(userId);
+            const { data: drafts, error: revisionError } = await SopDocumentAdapter.getMySopDrafts(userId);
             if (revisionError) {
                 throw revisionError;
             }
@@ -766,7 +766,7 @@ async function initializeSopPage() {
             if (!userId) {
                 throw new Error("Please sign in again.");
             }
-            const { data: sop, error } = await DocumentData.getSopDocuments({id: Number(draftSopId)});
+            const { data: sop, error } = await SopDocumentAdapter.getSopDocuments({id: Number(draftSopId)});
             if (error) {
                 throw error;
             }
@@ -921,8 +921,8 @@ async function initializeSopPage() {
             const revisionIds = [...new Set((instances || []).map(item => item.source_revision_id).filter(Boolean))];
             
             const [docs, revisions, nodes] = await Promise.all([
-                DocumentData.getSopDocuments({ids: docIds}),
-                DocumentData.getSopRevisionsByIds(revisionIds),
+                SopDocumentAdapter.getSopDocuments({ids: docIds}),
+                SopDocumentAdapter.getSopRevisionsByIds(revisionIds),
                 WorkflowService.listNodes({select: "id,label,node_type"})
             ]);
             
@@ -1309,7 +1309,7 @@ async function initializeSopPage() {
     async function loadSopCatalog() {
         const catalogBody = document.getElementById("sop-catalog-body");
         catalogBody.innerHTML = '<tr><td colspan="12">Loading...</td></tr>';
-        const { data, error } = await DocumentData.getSopDocuments();
+        const { data, error } = await SopDocumentAdapter.getSopDocuments();
 
         if (error) { 
             console.error("Error loading SOP catalog:", error); 

@@ -102,7 +102,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             const currentUserId = currentUserData?.user?.id || "";
             const docResult = instance.source_document_id
-                ? await DocumentData.getSopDocuments({id: Number(instance.source_document_id)})
+                ? await SopDocumentAdapter.getSopDocuments({id: Number(instance.source_document_id)})
                 : {data: null, error: null};
 
             if(docResult.error){
@@ -110,7 +110,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
 
             const revisionResult = instance.source_revision_id
-                ? await DocumentData.getSopRevisionsByIds([Number(instance.source_revision_id)])
+                ? await SopDocumentAdapter.getSopRevisionsByIds([Number(instance.source_revision_id)])
                 : {data: [], error: null};
             const revResult = {data: revisionResult.data?.[0] || null, error: revisionResult.error};
 
