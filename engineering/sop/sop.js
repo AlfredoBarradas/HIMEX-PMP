@@ -568,11 +568,11 @@ async function initializeSopPage() {
                 if (!createdRevision?.revision_id || !createdRevision?.revision_code) throw new Error("Document revision creation returned an unexpected response.");
                 const revisionRecord = { id: createdRevision.revision_id, revision_code: createdRevision.revision_code };
                 if (submitForValidation) {
-                    const { error: workflowError } = await supabaseClient.rpc("workflow_start_instance", {
-                        p_definition_id: 1,
-                        p_source_document_id: Number(sopId.value),
-                        p_source_revision_id: Number(revisionRecord.id),
-                        p_metadata: { source: "sop_revision_form", submitted_from: "Submit for Validation" }
+                    const { error: workflowError } = await WorkflowService.startInstance({
+                        definitionId: 1,
+                        sourceDocumentId: Number(sopId.value),
+                        sourceRevisionId: Number(revisionRecord.id),
+                        metadata: { source: "sop_revision_form", submitted_from: "Submit for Validation" }
                     });
                     if (workflowError) {
                         alert("Revision " + createdRevision.revision_code + " was saved as Draft, but submission failed: " + workflowError.message);
@@ -616,11 +616,11 @@ async function initializeSopPage() {
                     throw updateError;
                 }
                 if (submitForValidation) {
-                    const { error: workflowError } = await supabaseClient.rpc("workflow_start_instance", {
-                        p_definition_id: 1,
-                        p_source_document_id: Number(sopId.value),
-                        p_source_revision_id: Number(editingRevisionId),
-                        p_metadata: { source: "sop_form", submitted_from: "Submit for Validation" }
+                    const { error: workflowError } = await WorkflowService.startInstance({
+                        definitionId: 1,
+                        sourceDocumentId: Number(sopId.value),
+                        sourceRevisionId: Number(editingRevisionId),
+                        metadata: { source: "sop_form", submitted_from: "Submit for Validation" }
                     });
                     if (workflowError) {
                         console.error("Draft saved but workflow submission failed:", workflowError);
@@ -658,11 +658,11 @@ async function initializeSopPage() {
             if (!createdSop?.document_id || !createdSop?.revision_id || !createdSop?.revision_code) throw new Error("Document creation returned an unexpected response.");
             const sopDisplayCode = createdSop.document_code || "Unassigned";
             if (submitForValidation) {
-                const { data: workflow, error: workflowError } = await supabaseClient.rpc("workflow_start_instance", {
-                    p_definition_id: 1,
-                    p_source_document_id: Number(createdSop.document_id),
-                    p_source_revision_id: Number(createdSop.revision_id),
-                    p_metadata: {
+                const { data: workflow, error: workflowError } = await WorkflowService.startInstance({
+                    definitionId: 1,
+                    sourceDocumentId: Number(createdSop.document_id),
+                    sourceRevisionId: Number(createdSop.revision_id),
+                    metadata: {
                         source: "sop_form",
                         submitted_from: "Submit for Validation"
                     }
@@ -877,11 +877,11 @@ async function initializeSopPage() {
         if (!confirm("Submit " + submitButton.dataset.sopCode + " (" + submitButton.dataset.revisionCode + ")? This will start the workflow.")) return;
         submitButton.disabled = true;
         try {
-            const { data, error } = await supabaseClient.rpc("workflow_start_instance", {
-                p_definition_id: 1,
-                p_source_document_id: Number(submitButton.dataset.sopId),
-                p_source_revision_id: Number(submitButton.dataset.revisionId),
-                p_metadata: { source: "my_drafts", submitted_from: "My Drafts" }
+            const { data, error } = await WorkflowService.startInstance({
+                definitionId: 1,
+                sourceDocumentId: Number(submitButton.dataset.sopId),
+                sourceRevisionId: Number(submitButton.dataset.revisionId),
+                metadata: { source: "my_drafts", submitted_from: "My Drafts" }
             });
             if (error) throw error;
             closeSopModal();
@@ -906,23 +906,12 @@ async function initializeSopPage() {
         body.innerHTML = '<tr><td colspan="11">Loading...</td></tr>';
 
         try {
-            const { data: instances, error } = await supabaseClient
-            .from("workflow_instances")
-            .select(`
-                id,
-                source_document_id,
-                source_revision_id,
-                status,
-                current_node_id,
-                started_at,
-                completed_at
-            `)
-            .in("status", [
-                "active", 
-                "in_progress", 
-                "pending"
-            ])
-            .order("started_at", { ascending: false }); 
+            const { data: instances, error } = await WorkflowService.listInstances({
+                statuses: ["active", "in_progress", "pending"],
+                orderBy: "started_at",
+                ascending: false,
+                select: "id,source_document_id,source_revision_id,status,current_node_id,started_at,completed_at"
+            }); 
             
             if (error) {
                 throw error;
@@ -934,11 +923,7 @@ async function initializeSopPage() {
             const [docs, revisions, nodes] = await Promise.all([
                 DocumentData.getSopDocuments({ids: docIds}),
                 DocumentData.getSopRevisionsByIds(revisionIds),
-                supabaseClient.from("workflow_nodes").select(`
-                    id,
-                    label,
-                    node_type
-                `)
+                WorkflowService.listNodes({select: "id,label,node_type"})
             ]);
             
             for (const result of [docs, revisions, nodes]) {
@@ -1046,19 +1031,11 @@ async function initializeSopPage() {
     async function refreshWorkflowCounts() {
         try {
             
-            const { data: instances, error: instanceError } = await supabaseClient
-            .from("workflow_instances")
-            .select(`
-                id,
-                status`
-            )
-            .in("status", 
-                [
-                    "active", 
-                    "in_progress", 
-                    "pending"
-                ]
-            );
+            const { data: instances, error: instanceError } = await WorkflowService.listInstances({
+                statuses: ["active", "in_progress", "pending"],
+                orderBy: null,
+                select: "id,status"
+            });
 
             if (instanceError) {
                 throw instanceError;
@@ -1073,23 +1050,13 @@ async function initializeSopPage() {
 
             const ids = active.map(item => item.id);
             const [taskResult, nodeResult] = await Promise.all([
-                supabaseClient
-                .from("workflow_tasks")
-                .select(`
-                    instance_id,
-                    node_id,
-                    status
-                `)
-                .in("instance_id", ids),
+                WorkflowService.listTasks({
+                    instanceIds: ids,
+                    orderBy: null,
+                    select: "instance_id,node_id,status"
+                }),
 
-                supabaseClient
-                .from("workflow_nodes")
-                .select(`
-                    id,
-                    label,
-                    node_type,
-                    required_permission_code
-                `)
+                WorkflowService.listNodes({select: "id,label,node_type,required_permission_code"})
             ]);
 
             if (taskResult.error) {
@@ -1813,11 +1780,11 @@ async function initializeSopPage() {
                 if (revisionError) throw revisionError;
                 if (!createdRevision?.revision_id || !createdRevision?.revision_code) throw new Error("Document revision creation returned an unexpected response.");
                 const revisionRecord = { id: createdRevision.revision_id, revision_code: createdRevision.revision_code };
-                const { error: workflowError } = await supabaseClient.rpc("workflow_start_instance", {
-                    p_definition_id: 1,
-                    p_source_document_id: Number(sop.id),
-                    p_source_revision_id: Number(revisionRecord.id),
-                    p_metadata: { source: "sop_revision_modal", submitted_from: "Create Revision" }
+                const { error: workflowError } = await WorkflowService.startInstance({
+                    definitionId: 1,
+                    sourceDocumentId: Number(sop.id),
+                    sourceRevisionId: Number(revisionRecord.id),
+                    metadata: { source: "sop_revision_modal", submitted_from: "Create Revision" }
                 });
                 closeSopModal();
                 await Promise.all([loadSopCatalog(), loadMyDrafts(), refreshWorkflowCounts()]);
@@ -1876,26 +1843,32 @@ async function initializeSopPage() {
     async function renderSopWorkflowHistory(sopId) {
         const modalBody = document.querySelector(".sop-modal-body");
         try {
-            const { data: instances, error: instanceError } = await supabaseClient
-                .from("workflow_instances").select("id,status,started_at,completed_at")
-                .eq("source_document_id", Number(sopId)).order("started_at", { ascending: false });
+            const { data: instances, error: instanceError } = await WorkflowService.listInstances({
+                sourceDocumentId: Number(sopId),
+                orderBy: "started_at",
+                ascending: false,
+                select: "id,status,started_at,completed_at"
+            });
             if (instanceError) throw instanceError;
             const instanceIds = (instances || []).map(item => item.id);
             let history = [];
             if (instanceIds.length) {
-                const { data, error } = await supabaseClient.from("workflow_history")
-                    .select("instance_id,task_id,event_type,from_status,to_status,created_at,details")
-                    .in("instance_id", instanceIds).order("created_at", { ascending: true });
+                const { data, error } = await WorkflowService.listHistory({
+                    instanceIds,
+                    orderBy: "created_at",
+                    ascending: true,
+                    select: "instance_id,task_id,event_type,from_status,to_status,created_at,details"
+                });
                 if (error) throw error;
                 history = data || [];
             }
             const taskIds = [...new Set(history.map(item => item.task_id).filter(Boolean))];
             let taskNodeMap = new Map();
             if (taskIds.length) {
-                const { data: tasks, error: taskError } = await supabaseClient.from("workflow_tasks").select("id,node_id").in("id", taskIds);
+                const { data: tasks, error: taskError } = await WorkflowService.listTasks({taskIds, orderBy: null, select: "id,node_id"});
                 if (taskError) throw taskError;
                 const nodeIds = [...new Set((tasks || []).map(task => task.node_id).filter(Boolean))];
-                const { data: nodes, error: nodeError } = nodeIds.length ? await supabaseClient.from("workflow_nodes").select("id,label,node_type").in("id", nodeIds) : { data: [], error: null };
+                const { data: nodes, error: nodeError } = await WorkflowService.listNodes({ids: nodeIds, select: "id,label,node_type"});
                 if (nodeError) throw nodeError;
                 const nodeMap = new Map((nodes || []).map(node => [String(node.id), node]));
                 taskNodeMap = new Map((tasks || []).map(task => [String(task.id), nodeMap.get(String(task.node_id)) || {}]));

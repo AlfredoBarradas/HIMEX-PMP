@@ -17,6 +17,7 @@ window.WorkflowService = (() => {
 
     async function listInstances({
         documentTypeCode,
+        sourceDocumentId,
         statuses,
         orderBy = "started_at",
         ascending = false,
@@ -28,6 +29,9 @@ window.WorkflowService = (() => {
 
         if (documentTypeCode) {
             query = query.eq("document_type_code", documentTypeCode);
+        }
+        if (sourceDocumentId !== undefined && sourceDocumentId !== null) {
+            query = query.eq("source_document_id", sourceDocumentId);
         }
         if (Array.isArray(statuses) && statuses.length) {
             query = query.in("status", statuses);
@@ -106,15 +110,21 @@ window.WorkflowService = (() => {
 
     async function listHistory({
         instanceId,
+        instanceIds,
         orderBy = "created_at",
         ascending = true,
         select = "*"
     } = {}) {
         let query = ensureClient()
             .from("workflow_history")
-            .select(select)
-            .eq("instance_id", instanceId);
+            .select(select);
 
+        if (instanceId !== undefined && instanceId !== null) {
+            query = query.eq("instance_id", instanceId);
+        } else if (Array.isArray(instanceIds)) {
+            if (!instanceIds.length) return emptyResult();
+            query = query.in("instance_id", instanceIds);
+        }
         if (orderBy) {
             query = query.order(orderBy, { ascending });
         }
