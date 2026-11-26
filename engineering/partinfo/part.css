@@ -29,6 +29,7 @@
 .menu-grid {
     display: flex;
     justify-content: center;
+    margin-bottom: 40px;
 }
 
 .menu-group {
@@ -42,15 +43,19 @@
     height: 100%;
 }
 
-.section-filter-pn, .index-search {
-    margin-bottom: 20px;
+.section-filter-pn {
+    margin-bottom: 40px;
+}
+
+.index-search {
+    margin-bottom: 10px;
 }
 
 .index-filter {
     display: grid;
-    grid-template-columns: repeat(5, 200px);
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 20px;
-    justify-content: center;
+    margin-bottom: 10px;
 }
 
 @media (max-width: 900px) {

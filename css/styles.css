@@ -209,8 +209,10 @@ code {
 
 .content {
     width: 100%;
+    max-width: var(--content-width);
     min-width: 0;
     padding: 30px;
+    margin-inline: auto;
 }
 
 .content > h2 {
@@ -712,7 +714,7 @@ body.auth-pending::before {
     }
 
     .dashboard-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
     }
 
     .document-status {
