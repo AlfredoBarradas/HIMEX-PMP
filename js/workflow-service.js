@@ -96,6 +96,14 @@ window.WorkflowService = (() => {
         return query;
     }
 
+    async function getNode({ id, select = "*" } = {}) {
+        return ensureClient()
+            .from("workflow_nodes")
+            .select(select)
+            .eq("id", id)
+            .maybeSingle();
+    }
+
     async function listHistory({
         instanceId,
         orderBy = "created_at",
@@ -169,6 +177,7 @@ window.WorkflowService = (() => {
         getInstance,
         listTasks,
         listNodes,
+        getNode,
         listHistory,
         listTaskAssignees,
         getPeople,

@@ -64,17 +64,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     message(workflowBody, 6, "Loading SOP workflow history...");
 
     try {
-        const {data: instances, error: instanceError} = await supabaseClient
-            .from("workflow_instances")
-            .select("*")
-            .eq(
-                "document_type_code", 
-                "sop"
-            )
-            .order(
-                "started_at", 
-                {ascending:false}
-            );
+        const {data: instances, error: instanceError} = await WorkflowService.listInstances({
+            documentTypeCode: "sop",
+            orderBy: "started_at",
+            ascending: false
+        });
         
         if (instanceError) {
             throw instanceError;
@@ -84,27 +78,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         const ids = allInstances.map(row => row.id);
 
         const [taskResult, nodeResult] = await Promise.all([
-            ids.length ? supabaseClient
-                .from("workflow_tasks")
-                .select("*")
-                .in(
-                    "instance_id",
-                    ids
-                )
-                .order(
-                    "created_at",
-                    {ascending:true}
-                ): Promise.resolve({data: [], error:null}),
-
-            supabaseClient
-                .from("workflow_nodes")
-                .select(`
-                    id,
-                    version_id,
-                    label,
-                    node_type,
-                    required_permission_code
-                `)
+            WorkflowService.listTasks({
+                instanceIds: ids,
+                orderBy: "created_at",
+                ascending: true
+            }),
+            WorkflowService.listNodes({
+                select: "id,version_id,label,node_type,required_permission_code"
+            })
         ]);
         if (taskResult.error) {
             throw taskResult.error;
@@ -122,14 +103,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             DocumentData.getSopRevisionsByIds(revisionIds),
 
-            tasks.length ? supabaseClient
-                .from("workflow_task_assignees")
-                .select(`
-                    task_id,
-                    user_id
-                `)
-                .in("task_id", tasks.map(row => row.id))
-                : Promise.resolve({data: [], error: null})
+            WorkflowService.listTaskAssignees({
+                taskIds: tasks.map(row => row.id)
+            })
         ]);
         if (docResult.error) {
             throw docResult.error;
@@ -146,7 +122,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             assignments = assignmentResult.data || [];
         const docMap = new Map(docs.map(row => [String(row.id), row]));
         const revisionMap = new Map(revisions.map(row => [String(row.id), row]));
-        const peopleResult = ids.length ? await supabaseClient.rpc("get_workflow_people", {p_instance_ids: ids}) : {data: [], error:null};
+        const peopleResult = await WorkflowService.getPeople(ids);
 
         if(peopleResult.error) {
             throw peopleResult.error;
@@ -257,18 +233,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         modal.classList.remove("hidden");
 
         try{
-            const {data:instance,error:instanceError} = await supabaseClient
-                .from("workflow_instances")
-                .select("*")
-                .eq(
-                    "id",
-                    instanceId
-                )
-                .eq(
-                    "document_type_code",
-                    "sop"
-                )
-                .single();
+            const {data:instance,error:instanceError} = await WorkflowService.getInstance({
+                id: instanceId,
+                documentTypeCode: "sop"
+            });
             if (instanceError) {
                 throw instanceError;
             }
@@ -277,29 +245,16 @@ document.addEventListener("DOMContentLoaded", async () => {
                 {data:tasks,error:taskError}, 
                 {data:history,error:historyError}
             ] = await Promise.all([
-                supabaseClient
-                    .from("workflow_tasks")
-                    .select("*")
-                    .eq(
-                        "instance_id",
-                        instanceId
-                    )
-                    .order(
-                        "created_at",
-                        {ascending:true}
-                    ),
-                
-                supabaseClient
-                    .from("workflow_history")
-                    .select("*")
-                    .eq(
-                        "instance_id",
-                        instanceId
-                    )
-                    .order(
-                        "created_at",
-                        {ascending:true}
-                    )
+                WorkflowService.listTasks({
+                    instanceId,
+                    orderBy: "created_at",
+                    ascending: true
+                }),
+                WorkflowService.listHistory({
+                    instanceId,
+                    orderBy: "created_at",
+                    ascending: true
+                })
             ]);
             if (taskError) {
                 throw taskError;
@@ -312,13 +267,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                 taskRows = tasks || [], 
                 taskIds=taskRows.map(row => row.id);
             
-            const assignmentResult = taskIds.length? await supabaseClient
-                .from("workflow_task_assignees")
-                .select("task_id,user_id")
-                .in(
-                    "task_id",
-                    taskIds
-                ): {data: [], error: null};
+            const assignmentResult = await WorkflowService.listTaskAssignees({
+                taskIds
+            });
             
             if(assignmentResult.error){
                 throw assignmentResult.error;
@@ -347,7 +298,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 throw revResult.error;
             }
             
-            const peopleResult = await supabaseClient.rpc("get_workflow_people", {p_instance_ids: [Number(instanceId)]});
+            const peopleResult = await WorkflowService.getPeople([Number(instanceId)]);
             if (peopleResult.error) {
                 throw peopleResult.error;
             }
@@ -355,15 +306,12 @@ document.addEventListener("DOMContentLoaded", async () => {
             const peopleRows = peopleResult.data || [];
             const profileMap = new Map(peopleRows.map(row => [String(row.user_id), row.full_name]));
             const pendingTask = taskRows.find(row => pendingStatuses.includes(String(row.status || "").toLowerCase()));
-            const nodeResult = pendingTask? await supabaseClient
-                .from("workflow_nodes")
-                .select(`
-                    label,
-                    node_type,
-                    required_permission_code
-                `)
-                .eq("id",pendingTask.node_id)
-                .maybeSingle(): {data: null, error: null};
+            const nodeResult = pendingTask
+                ? await WorkflowService.getNode({
+                    id: pendingTask.node_id,
+                    select: "label,node_type,required_permission_code"
+                })
+                : {data: null, error: null};
 
             if (nodeResult.error) {
                 throw nodeResult.error;
@@ -500,24 +448,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         
         button.disabled = true;
         try{
-            const rpcName = 
-                isReject?"workflow_reject_task": 
-                isReturn?"workflow_return_task_to_draft": 
-                "workflow_complete_task";
-            
-            const rpcArgs = isReject?{
-                p_task_id: taskId,
-                p_reason: comment
-            }: isReturn?{
-                p_task_id: taskId,
-                p_reason:comment
-            }:{
-                p_task_id: taskId,
-                p_transition_key: null,
-                p_result: {comment}
-            };
+            const actionResult = isReject
+                ? await WorkflowService.rejectTask({taskId, reason: comment})
+                : isReturn
+                    ? await WorkflowService.returnTaskToDraft({taskId, reason: comment})
+                    : await WorkflowService.completeTask({
+                        taskId,
+                        transitionKey: null,
+                        result: {comment}
+                    });
 
-            const {error} = await supabaseClient.rpc(rpcName, rpcArgs);
+            const {error} = actionResult;
             if (error){
                 throw error;
             }
