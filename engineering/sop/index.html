@@ -182,8 +182,8 @@ class="auth-pending">
                             placeholder="Search by area, process, model, part number, operation...">
                     </div>
                 
-                    <div class="catalog-table">
-                        <table>
+                    <div class="table-container catalog-table">
+                        <table class="data-table">
                             <thead>
                                 <tr>
                                     <th>Code</th>
@@ -215,8 +215,8 @@ class="auth-pending">
                 
                     <div class="catalog-search section-search"><label for="sop-workflow-search">Search workflow</label><input type="search" id="sop-workflow-search" data-table-search="sop-workflow-body" placeholder="Search code, stage, assignee, status..."></div>
                 
-                    <div class="catalog-table">
-                        <table>
+                    <div class="table-container catalog-table">
+                        <table class="data-table">
                             <thead>
                                 <tr>
                                     <th>Date</th>
@@ -253,8 +253,8 @@ class="auth-pending">
                 
                     <div class="catalog-search section-search"><label for="sop-validation-search">Search pending validation</label><input type="search" id="sop-validation-search" data-table-search="sop-validation-body" placeholder="Search code, model, part number, creator..."></div>
                 
-                    <div class="catalog-table">
-                        <table>
+                    <div class="table-container catalog-table">
+                        <table class="data-table">
                             <thead>
                                 <tr>
                                     <th>Date</th>
@@ -293,8 +293,8 @@ class="auth-pending">
                             type="search" id="sop-approval-search" data-table-search="sop-approval-body"
                             placeholder="Search code, model, part number, creator..."></div>
                 
-                    <div class="catalog-table">
-                        <table>
+                    <div class="table-container catalog-table">
+                        <table class="data-table">
                             <thead>
                                 <tr>
                                     <th>Date</th>
@@ -334,12 +334,7 @@ class="auth-pending">
                     </div>
                     <!-- FILTERS -->
                     <div class="catalog-filters">
-                        <div class="filter-group">
-                            <label for="filter-area">Area</label>
-                            <select id="filter-area">
-                                <option value="">All areas</option>
-                            </select>
-                        </div>
+                        <div class="filter-group"><label for="filter-area">Area</label><select id="filter-area"><option value="">All areas</option></select></div>
                         <div class="filter-group"><label for="filter-process">Process</label><select id="filter-process"><option value="">All processes</option></select></div>
                         <div class="filter-group"><label for="filter-series">Model Series</label><select id="filter-series"><option value="">All model series</option></select></div>
                         <div class="filter-group"><label for="filter-model">Size / Model</label><select id="filter-model"><option value="">All sizes</option></select></div>
@@ -351,10 +346,22 @@ class="auth-pending">
                         <button type="button" id="clear-sop-filters" class="secondary-button">Clear Filters</button>
                     </div>
                     <!-- TABLE -->
-                    <div class="catalog-table">
-                        <table>
+                    <div class="table-container catalog-table">
+                        <table class="data-table">
                             <thead>
-                                <tr><th>Date</th><th>Status</th><th>Code</th><th>Area</th><th>Process</th><th>Model</th><th>Part Name</th><th>Part Number</th><th>Document Name</th><th>Revision</th><th>Created By</th></tr>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>Code</th>
+                                    <th>Area</th>
+                                    <th>Process</th>
+                                    <th>Model</th>
+                                    <th>Part Name</th>
+                                    <th>Part Number</th>
+                                    <th>Document Name</th>
+                                    <th>Revision</th>
+                                    <th>Created By</th>
+                                </tr>
                             </thead>
                             <tbody id="sop-catalog-body">
                             </tbody>

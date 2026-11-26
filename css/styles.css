@@ -390,23 +390,30 @@ button:disabled {
 
 table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     color: var(--color-text);
 }
 
 thead th {
-    padding: 11px 14px;
-    border-bottom: 1px solid var(--color-border-strong);
+    padding: 11px 12px;
+    border-right: 1px solid var(--color-border-strong);
+    border-bottom: 1px solid var(--color-border);
     background: var(--color-surface-alt);
-    color: var(--color-text-muted);
+    color: var(--color-text);
     font-size: 12px;
     font-weight: 700;
     text-align: left;
     vertical-align: middle;
+    white-space: nowrap;
+}
+
+thead th:last-child {
+    border-right: 0;
 }
 
 tbody td {
-    padding: 11px 14px;
+    padding: 11px 12px;
     border-bottom: 1px solid var(--color-divider);
     color: var(--color-text);
     font-size: 13px;
@@ -441,6 +448,10 @@ table tbody tr:has(button, a, [role="button"], [data-action]):hover {
     width: 100%;
     min-width: 0;
     overflow-x: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    overscroll-behavior: contain;
 }
 
 .form-group label {
