@@ -20,21 +20,90 @@ class="auth-pending">
     <div class="app">
         
         <div id="sidebar-container"></div>
+        
         <main class="main-content">
             <header id="topbar-container"></header>
 
-            <section>
-                <div>
-                    <h2>PMP INJECTION & STAMPING</h2>
-                    <strong>Part Number Standard</strong>
-                </div>
-                <div>
-                    <p>Last update: <span>November 25, 2026</span></p>
-                </div>
+            <section class="content">
+                
+                <!-- Header -->
+                <section>
+                    <div>
+                        <div>
+                            <h2>PMP INJECTION & STAMPING</h2>
+                            <strong>Part Number Standard</strong>
+                        </div>
+                        <div>
+                            <p>Last update: <span>November 25, 2026</span></p>
+                        </div>
+                    </div>
+                </section>
+                <!-- Menu -->
+                <section>
+                    <div>
+                        <button>Create new part</button>
+                        <button>Update part number</button>
+                    </div>
+                </section>
+                <!-- Filters -->
+                <section>
+                    <div>
+                        <div>
+                            <label>Search any info</label>
+                            <input type="text">
+                        </div>
+                        <div>
+                            <button>Model series</button>
+                            <button>Size</button>
+                            <button>Part name</button>
+                        </div>
+                        <button>Clear filters</button>
+                    </div>
+                </section>
+                <!-- Table -->
+                <section>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Model</th>
+                                    <th>Part Number</th>
+                                    <th>Part Name</th>
+                                    <th>Description</th>
+                                    <th>Workshop</th>
+                                    <th>Status</th>
+                                    <th>Structure</th>
+                                    <th>Size</th>
+                                    <th>Model Series</th>
+                                    <th>UPH</th>
+                                    <th>Headcount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="11">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
                 
             </section>
 
         </main>
+
+        <!-- New part number -->
+        <section hidden>
+            <div>
+                <h3>Part number creation</h3>
+            </div>
+        </section>
+        <!-- New part number -->
+        <section hidden>
+            <div>
+                <h3>Part number editor</h3>
+            </div>
+        </section>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
