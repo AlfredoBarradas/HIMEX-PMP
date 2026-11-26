@@ -41,13 +41,22 @@ async function initializeSopPage() {
     }
 
     applySopPermissions();
+    SopCatalog.initialize({
+        escapeHtml,
+        formatDate,
+        revisionNumber,
+        statusLabel,
+        renderStatusBadge,
+        renderRevisionBadge,
+        onViewSop: viewSop
+    });
     if (hasPermission("documents.sop.view")) {
         if (hasPermission("documents.sop.create")) {
             showSection("sop-control");
-            loadSopCatalog();
+            SopCatalog.load();
         } else {
             showSection("sop-catalog");
-            loadSopCatalog();
+            SopCatalog.load();
         }
     }
 
@@ -110,7 +119,7 @@ async function initializeSopPage() {
             loadSopTaskCatalog(sectionId);
         }
         if (sectionId === "sop-catalog") {
-            loadSopCatalog();
+            SopCatalog.load();
         }
         window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -577,7 +586,7 @@ async function initializeSopPage() {
                     if (workflowError) {
                         alert("Revision " + createdRevision.revision_code + " was saved as Draft, but submission failed: " + workflowError.message);
                         await loadMyDrafts();
-                        await loadSopCatalog();
+                        await SopCatalog.load();
                         return;
                     }
                     alert("Revision " + createdRevision.revision_code + " was created and submitted for validation.");
@@ -589,9 +598,9 @@ async function initializeSopPage() {
                 setCreateMode();
                 applySopPermissions();
                 showSection(hasPermission("documents.sop.create") ? "sop-control" : "sop-catalog");
-                loadSopCatalog();
+                SopCatalog.load();
                 await loadMyDrafts();
-                await loadSopCatalog();
+                await SopCatalog.load();
                 return;
             }
             if (sopMode.value === "edit") {
@@ -626,7 +635,7 @@ async function initializeSopPage() {
                         console.error("Draft saved but workflow submission failed:", workflowError);
                         alert("Draft changes were saved, but submission for validation failed: " + workflowError.message);
                         await loadMyDrafts();
-                        await loadSopCatalog();
+                        await SopCatalog.load();
                         return;
                     }
                     alert("Draft updated and submitted for validation.");
@@ -638,7 +647,7 @@ async function initializeSopPage() {
                 setCreateMode();
                 showSection("sop-drafts");
                 await loadMyDrafts();
-                await loadSopCatalog();
+                await SopCatalog.load();
                 return;
             }
             const workshopId = Number(document.getElementById("sop-workshop").selectedOptions[0]?.dataset.id);
@@ -671,7 +680,7 @@ async function initializeSopPage() {
                     console.error("Error starting SOP workflow:", workflowError);
                     alert("SOP " + sopDisplayCode + " was created as Draft, but submission for validation failed. No workflow was started. " + workflowError.message);
                     await loadMyDrafts();
-                    await loadSopCatalog();
+                    await SopCatalog.load();
                     return;
                 }
                 console.log("SOP workflow started:", workflow);
@@ -682,7 +691,7 @@ async function initializeSopPage() {
             sopForm.reset();
             setCreateMode();
             showSection("sop-control");
-            await loadSopCatalog();
+            await SopCatalog.load();
         } catch (error) {
             console.error("Error saving SOP:", error);
             alert("Error saving SOP. " + (error?.message || "Check the browser console for details."));
@@ -846,7 +855,7 @@ async function initializeSopPage() {
                 const { error } = await supabaseClient.rpc("discard_document_revision", { p_document_id: Number(discardRevisionButton.dataset.sopId), p_revision_id: Number(discardRevisionButton.dataset.revisionId), p_reason: reason.trim() });
                 if (error) throw error;
                 closeSopModal();
-                await Promise.all([loadMyDrafts(), loadSopCatalog(), refreshWorkflowCounts()]);
+                await Promise.all([loadMyDrafts(), SopCatalog.load(), refreshWorkflowCounts()]);
                 alert(revisionCode + " was discarded. The released revision remains unchanged.");
             } catch (error) { console.error("Error discarding SOP revision:",error); alert("Could not discard this revision: " + (error.message || "Apply the SOP revision lifecycle migration and check permissions.")); discardRevisionButton.disabled = false; }
             return;
@@ -863,7 +872,7 @@ async function initializeSopPage() {
                 closeSopModal();
                 document.getElementById("sop-modal").removeAttribute("data-sop");
                 alert("Draft deleted successfully.");
-                await Promise.all([loadMyDrafts(), loadSopCatalog(), refreshWorkflowCounts()]);
+                await Promise.all([loadMyDrafts(), SopCatalog.load(), refreshWorkflowCounts()]);
             } catch (error) {
                 console.error("Error deleting SOP draft:", error);
                 alert("Could not delete this draft: " + (error.message || "Check the delete_document_draft RPC and permissions."));
@@ -887,7 +896,7 @@ async function initializeSopPage() {
             closeSopModal();
             showSection("sop-drafts");
             alert("SOP submitted. The workflow has started.");
-            await Promise.all([loadMyDrafts(), loadSopCatalog(), refreshWorkflowCounts()]);
+            await Promise.all([loadMyDrafts(), SopCatalog.load(), refreshWorkflowCounts()]);
             loadSopWorkflow();
         } catch (error) {
             console.error("Error submitting draft for validation:", error);
@@ -1119,222 +1128,6 @@ async function initializeSopPage() {
     // ==========================
     // SOP Index SECTION
     // ==========================
-
-    // Filter section
-    function initializeSopCatalogFilters() {
-        document.getElementById("sop-search-box")?.addEventListener("input",applySopCatalogFilters);
-        [
-            "filter-area",
-            "filter-process",
-            "filter-series",
-            "filter-model",
-            "filter-part-name",
-            "filter-created-by",
-            "filter-status"
-        ].forEach(id => document.getElementById(id)?.addEventListener("change", applySopCatalogFilters));
-        document.getElementById("clear-sop-filters")?.addEventListener("click", () => {
-            const search = document.getElementById("sop-search-box");
-            if (search) {
-                search.value="";
-            }
-            [
-                "filter-area",
-                "filter-process",
-                "filter-series",
-                "filter-model",
-                "filter-part-name",
-                "filter-created-by",
-                "filter-status"
-            ].forEach(id => {
-                const select=document.getElementById(id);
-                if(select){
-                    select.value="";
-                }
-            });
-            applySopCatalogFilters();
-        });
-        document.querySelectorAll("[data-table-search]").forEach(input => input.addEventListener("input", () => {
-            const body = document.getElementById(input.dataset.tableSearch);
-            const query = input.value.trim().toLowerCase();
-            body?.querySelectorAll("tr").forEach(row => 
-                row.hidden = Boolean(query) && 
-                !row.textContent.toLowerCase().includes(query));
-            }
-        ));
-        document.addEventListener("click",event => { 
-            const row = event.target.closest("#sop-catalog-body .catalog-clickable-row");
-            if (row && !event.target.closest("button, a, input, select, textarea, label")){
-                viewSop(row.dataset.sopId);
-            }
-        });
-        document.addEventListener("keydown",event => {
-            const row = event.target.closest("#sop-catalog-body .catalog-clickable-row");
-            if (row && (event.key === "Enter" || event.key === " ")){
-                event.preventDefault();
-                viewSop(row.dataset.sopId);
-            }
-        });
-    }
-    function initializeCatalogSorting() {
-        document.querySelectorAll(".catalog-table table").forEach(table => table.querySelectorAll("thead th").forEach((header, index) => {
-            header.title = "Sort by " + header.textContent.trim(); 
-            header.setAttribute("aria-sort", "none");
-            header.addEventListener("click", () => { 
-                const body = table.tBodies[0]; 
-                if (!body) {
-                    return; 
-                }
-                const direction = header.dataset.sortDirection === "A-Z"? "Z-A": "A-Z"; 
-                table.querySelectorAll("thead th").forEach(item => {
-                    delete item.dataset.sortDirection;
-                    item.setAttribute("aria-sort", "none");
-                }); 
-                header.dataset.sortDirection = direction;
-                header.setAttribute("aria-sort", direction === "A-Z"? "ascending": "descending");
-                const rows = [...body.rows].filter(row => row.cells.length > 1); 
-                rows.sort((a, b) => {
-                    const av = (a.cells[index]?.innerText || "").trim();
-                    const bv = (b.cells[index]?.innerText || "").trim();
-                    const ad = Date.parse(av),bd=Date.parse(bv);
-                    const cmp = 
-                        /date/i.test(header.textContent) && 
-                        !Number.isNaN(ad) && 
-                        !Number.isNaN(bd)? ad-bd
-                        : av.localeCompare(bv, undefined, {
-                            numeric: true, 
-                            sensitivity: "base"
-                        });
-                    return direction === "A-Z"? cmp: -cmp;
-                });
-                rows.forEach(row => body.appendChild(row));
-            });
-        }));
-    }
-    function populateSopCatalogFilters() {
-        const fields = [
-            ["filter-area", "area", "All areas"],
-            ["filter-process", "process", "All processes"],
-            ["filter-series", "series", "All model series"],
-            ["filter-model", "model", "All sizes"],
-            ["filter-part-name", "partName", "All part names"],
-            ["filter-created-by", "createdBy", "All creators"],
-            ["filter-status", "status", "All statuses"]
-        ];
-        fields.forEach(([id, key, label]) => {
-            const select = document.getElementById(id);
-            if (!select) {
-                return;
-            }
-            const previous = select.value;
-            const values = [...new Set([...document
-                .querySelectorAll("#sop-catalog-body tr")]
-                .map(row => row.dataset[key])
-                .filter(Boolean))]
-                .sort((a, b) => a.localeCompare(b));
-
-            select.innerHTML=
-                `<option value="">
-                    ${escapeHtml(label)}
-                </option>
-                ${values.map(value => 
-                `<option value="${escapeHtml(value)}">
-                    ${escapeHtml(value)}
-                </option>
-                `).join("")}`;
-            select.value = values.includes(previous)?previous:"";
-        });
-    }
-    function applySopCatalogFilters() {
-        const query = (document.getElementById("sop-search-box")?.value || "").trim().toLowerCase();
-        const filters = {
-            area: document.getElementById("filter-area")?.value || "",
-            process: document.getElementById("filter-process")?.value || "",
-            series: document.getElementById("filter-series")?.value || "",
-            model: document.getElementById("filter-model")?.value || "",
-            partName: document.getElementById("filter-part-name")?.value || "",
-            createdBy: document.getElementById("filter-created-by")?.value || "",
-            status: document.getElementById("filter-status")?.value || ""
-        };
-        document.querySelectorAll("#sop-catalog-body tr").forEach(row => {
-            const textMatch = !query || row.textContent.toLowerCase().includes(query);
-            const filterMatch = Object.entries(filters).every(([key, value]) => !value || row.dataset[key] === value);
-            row.hidden = !(textMatch&&filterMatch);
-        });
-    }
-
-    initializeSopCatalogFilters();
-    initializeCatalogSorting();
-
-    // Index section
-    function renderSopCatalog(sops, creatorMap = new Map()) {
-        const body = document.getElementById("sop-catalog-body"); 
-        body.innerHTML = "";
-        sops.forEach(sop => {
-            const revisions = sop.document_revisions || [];
-            const released = revisions.filter(revision => String(revision.status || "").toLowerCase() === "released");
-            const current = [...(released.length? released: revisions)].sort((a, b) => revisionNumber(b) - revisionNumber(a))[0];
-            const creator = creatorMap.get(String(current?.created_by || sop.created_by)) || "Unknown";
-            const status = current?.status || sop.status || "Unknown";
-            const row = document.createElement("tr"); 
-
-            row.className = "catalog-clickable-row"; 
-            row.tabIndex = 0; 
-            row.setAttribute("role", "button"); 
-            row.setAttribute("aria-label", "View SOP " + (sop.sop_code || "Unassigned")); 
-            row.dataset.sopId = String(sop.id);
-            row.dataset.area = sop.workshops?.name || ""; 
-            row.dataset.process = sop.process_areas?.name || ""; 
-            row.dataset.series = sop.models?.model_series?.name || ""; 
-            row.dataset.model = sop.models?.size_model || ""; 
-            row.dataset.partName = sop.part_names?.code || ""; 
-            row.dataset.createdBy = creator; 
-            row.dataset.status = statusLabel(status);
-            
-            row.innerHTML = 
-                `<td>${escapeHtml(formatDate(current?.released_at||current?.created_at||sop.created_at))}</td>
-                <td>${renderStatusBadge(status)}</td>
-                <td>${escapeHtml(sop.sop_code||"Unassigned")}</td>
-                <td>${escapeHtml(sop.workshops?.name||"")}</td>
-                <td>${escapeHtml(sop.process_areas?.name||"")}</td>
-                <td>${escapeHtml(sop.models?.size_model||"")}</td>
-                <td>${escapeHtml(sop.part_names?.code||"")}</td>
-                <td>${escapeHtml(sop.part_number||"")}</td>
-                <td>${escapeHtml(sop.document_name||"")}</td>
-                <td>${renderRevisionBadge(current?.revision_code,status)}</td>
-                <td>${escapeHtml(creator)}</td>
-            `;
-            body.appendChild(row);
-        });
-    }
-    async function loadSopCatalog() {
-        const catalogBody = document.getElementById("sop-catalog-body");
-        catalogBody.innerHTML = '<tr><td colspan="12">Loading...</td></tr>';
-        const { data, error } = await SopDocumentAdapter.getSopDocuments();
-
-        if (error) { 
-            console.error("Error loading SOP catalog:", error); 
-            catalogBody.innerHTML = '<tr><td colspan="12">Error loading SOP catalog.</td></tr>'; 
-            return; 
-        }
-        if (!data || data.length === 0) { 
-            catalogBody.innerHTML = '<tr><td colspan="12">No SOPs found.</td></tr>'; 
-            populateSopCatalogFilters(); 
-            return; 
-        }
-        const creatorIds = [...new Set(data.map(sop => { 
-            const revs=sop.document_revisions || []; 
-            const released=revs.filter(r=>String(r.status||"").toLowerCase()==="released"); 
-            const current=[...(released.length?released:revs)].sort((a,b)=>revisionNumber(b)-revisionNumber(a))[0]; 
-            return current?.created_by || sop.created_by; 
-        }).filter(Boolean))];
-        let profiles=[];
-        if (creatorIds.length) { const profileResult=await supabaseClient.from("user_profile_names").select("id,full_name").in("id",creatorIds); if(profileResult.error) console.warn("Creator names unavailable in SOP catalog:",profileResult.error); else profiles=profileResult.data||[]; }
-        renderSopCatalog(data,new Map(profiles.map(profile=>[String(profile.id),profile.full_name||"Unknown"])));
-        populateSopCatalogFilters();
-        applySopCatalogFilters();
-    }
-
-    loadSopCatalog();
 
     // SOP details section
     function openSopModal() {
@@ -1787,7 +1580,7 @@ async function initializeSopPage() {
                     metadata: { source: "sop_revision_modal", submitted_from: "Create Revision" }
                 });
                 closeSopModal();
-                await Promise.all([loadSopCatalog(), loadMyDrafts(), refreshWorkflowCounts()]);
+                await Promise.all([SopCatalog.load(), loadMyDrafts(), refreshWorkflowCounts()]);
                 if (workflowError) {
                     alert("Revision " + createdRevision.revision_code + " was created, but submission failed: " + workflowError.message + ". It remains Draft. Check My Drafts to retry.");
                 } else {
