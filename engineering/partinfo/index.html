@@ -15,6 +15,8 @@
 
 <body 
 data-page="partinfo" 
+data-page-title="Part Numbers" 
+data-page-description="Standar information"
 class="auth-pending">
 
     <div class="app">
@@ -27,7 +29,7 @@ class="auth-pending">
             <section class="content">
                 
                 <!-- Header -->
-                <section>
+                <section class="section-header-pn">
                     <div>
                         <div>
                             <h2>PMP INJECTION & STAMPING</h2>
@@ -39,29 +41,33 @@ class="auth-pending">
                     </div>
                 </section>
                 <!-- Menu -->
-                <section>
+                <section class="section-menu-pn">
                     <div>
-                        <button>Create new part</button>
-                        <button>Update part number</button>
+                        <div><button type="button" id="create-pn-button" class="primary-button">Create New Part Number</button></div>
+                        <div><button type="button" id="update-pn-button" class="secondary-button">Update Part Number</button></div>
                     </div>
                 </section>
                 <!-- Filters -->
-                <section>
+                <section class="section-filter-pn">
                     <div>
-                        <div>
-                            <label>Search any info</label>
-                            <input type="text">
+                        <div class="index-search">
+                            <label for="part-search-box">Search by workshop, name, model, size, etc.</label>
+                            <input type="text" id="part-search-box" placeholder="Search part number data...">
                         </div>
-                        <div>
-                            <button>Model series</button>
-                            <button>Size</button>
-                            <button>Part name</button>
+                        <div class="index-filter">
+                            <div class="filter-group"><label for="filter-workshop">Workshop</label><select id="filter-workshop"><option value="">All</option></select></div>
+                            <div class="filter-group"><label for="filter-name">Part name</label><select id="filter-name"><option value="">All</option></select></div>
+                            <div class="filter-group"><label for="filter-model">Model</label><select id="filter-model"><option value="">All</option></select></div>
+                            <div class="filter-group"><label for="filter-size">Size</label><select id="filter-size"><option value="">All</option></select></div>
+                            <div class="filter-group"><label for="filter-status">Status</label><select id="filter-status"><option value="">All</option></select></div>
                         </div>
-                        <button>Clear filters</button>
+                        <div class="index-filter-action">
+                            <button type="button" id="index-filter-clear" class="secondary-button">Clear Filter</button>
+                        </div>
                     </div>
                 </section>
                 <!-- Table -->
-                <section>
+                <section class="section-index-pn">
                     <div class="table-container">
                         <table class="data-table">
                             <thead>
@@ -79,10 +85,7 @@ class="auth-pending">
                                     <th>Headcount</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <tr>
-                                    <td colspan="11">Loading...</td>
-                                </tr>
+                            <tbody id="index-body-pn">
                             </tbody>
                         </table>
                     </div>
@@ -109,7 +112,9 @@ class="auth-pending">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/js/supabase.js"></script>
     <script src="/js/auth.js"></script>
+    
     <script src="/components/sidebar/sidebar.js"></script>
     <script src="/components/topbar/topbar.js"></script>
+    <script src="./part.js"></script>
 </body>
 </html>

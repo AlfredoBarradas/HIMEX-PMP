@@ -1077,7 +1077,8 @@ async function initializeSopPage() {
                 .from("workflow_tasks")
                 .select(`
                     instance_id,
-                    node_id,status
+                    node_id,
+                    status
                 `)
                 .in("instance_id", ids),
 

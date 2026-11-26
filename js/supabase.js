@@ -14,6 +14,16 @@ let currentPermissionCodes = new Set();
 let authContextPromise = null;
 let authContextInitialized = false;
 
+function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[char]);
+}
+
 async function loadCurrentUserContext(user) {
     if (!user) {
         clearAuthContext();
